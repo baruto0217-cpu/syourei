@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>救急ケースノート</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d1117;--surf:#161b22;--card:#1c2230;--card2:#212836;--inp:#0d1117;
+  --acc:#e53e3e;--acc2:#ed8936;--acc-g:rgba(229,62,62,0.13);
+  --tp:#e6edf3;--ts:#8b949e;--tm:#484f58;--bd:#30363d;--bd2:#3d444d;
+  --ok:#2ea043;--r:8px;--rl:12px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--tp);font-family:'Noto Sans JP',sans-serif;font-size:14px;line-height:1.6}
+input,select,textarea,button{font-family:'Noto Sans JP',sans-serif}
+button{cursor:pointer}
+
+/* ========== SCREEN ROUTER ========== */
+.screen{display:none}
+.screen.active{display:block}
+
+/* ========== LOGIN ========== */
+#scr-login{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:var(--bg)}
+#scr-login.active{display:flex}
+.login-logo{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:40px}
+.login-icon{width:72px;height:72px;background:var(--acc);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.login-title{font-size:24px;font-weight:700;letter-spacing:.06em;color:var(--tp)}
+.login-sub{font-size:13px;color:var(--ts);letter-spacing:.08em}
+.login-card{background:var(--surf);border:1px solid var(--bd);border-radius:var(--rl);padding:28px 24px;width:100%;max-width:360px}
+.login-label{font-size:12px;color:var(--ts);font-weight:500;letter-spacing:.06em;margin-bottom:8px;display:block}
+.login-input{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:16px;padding:12px 14px;outline:none;transition:border-color .2s;letter-spacing:.2em}
+.login-input:focus{border-color:var(--acc)}
+.login-input::placeholder{letter-spacing:.04em;font-size:14px;color:var(--tm)}
+.login-btn{width:100%;margin-top:16px;padding:13px;background:var(--acc);border:none;border-radius:var(--r);color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;transition:background .2s}
+.login-btn:hover{background:#c53030}
+.login-btn:active{transform:scale(.98)}
+.login-err{display:none;margin-top:10px;font-size:12px;color:var(--acc);text-align:center}
+.login-hint{margin-top:20px;font-size:11px;color:var(--tm);text-align:center;line-height:1.7}
+.login-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:var(--acc-g);border:1px solid var(--acc);border-radius:20px;font-size:11px;color:var(--acc);margin-top:16px}
+.login-tabs{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.login-tab{flex:1;padding:9px;font-size:13px;background:transparent;border:none;color:var(--ts);cursor:pointer;transition:all .2s;font-family:"Noto Sans JP",sans-serif}
+.login-tab.on{background:var(--acc);color:#fff;font-weight:700}
+.login-link{display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--ts);cursor:pointer;text-decoration:underline;background:none;border:none;width:100%;font-family:"Noto Sans JP",sans-serif}
+.login-link:hover{color:var(--tp)}
+.login-success{display:none;margin-top:12px;padding:12px;background:rgba(46,160,67,.15);border:1px solid #2ea043;border-radius:var(--r);font-size:12px;color:#56d364;text-align:center;line-height:1.6}
+.login-spinner{display:none;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ========== APP SHELL ========== */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.active{display:flex}
+.app-hdr{background:var(--surf);border-bottom:1px solid var(--bd);padding:0 20px;padding-top:var(--safe-top);display:flex;align-items:center;justify-content:space-between;height:calc(56px + var(--safe-top));flex-shrink:0;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-ic{width:32px;height:32px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-tx{font-size:15px;font-weight:700;letter-spacing:.05em;color:var(--tp)}
+.logo-sb{font-size:10px;color:var(--ts);letter-spacing:.1em}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-bdg{background:var(--acc-g);border:1px solid var(--acc);color:var(--acc);font-size:11px;padding:3px 10px;border-radius:20px}
+.hdr-user{font-size:12px;color:var(--ts)}
+.logout-btn{font-size:12px;color:var(--tm);background:transparent;border:1px solid var(--bd);border-radius:6px;padding:4px 10px;transition:all .2s}
+.logout-btn:hover{color:var(--tp);border-color:var(--bd2)}
+
+.app-nav{background:var(--surf);border-bottom:1px solid var(--bd);display:flex;padding:0 20px;overflow-x:auto;flex-shrink:0}
+.app-nav::-webkit-scrollbar{display:none}
+.ntab{padding:12px 16px;font-size:13px;color:var(--ts);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .2s,border-color .2s;user-select:none}
+.ntab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.ntab:hover:not(.on){color:var(--tp)}
+.ndot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+
+.app-content{flex:1;overflow-y:auto}
+
+/* ========== COMMON ========== */
+.page{display:none}
+.page.active{display:block}
+
+.sec-hdr-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sec-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0}
+.sec-title-sm{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ts);text-transform:uppercase}
+.sec-line{flex:1;height:1px;background:var(--bd)}
+
+.form-label{font-size:12px;font-weight:500;color:var(--ts);margin-bottom:6px;display:flex;align-items:center;gap:5px;letter-spacing:.03em}
+.req{width:4px;height:4px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:14px;padding:10px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--acc)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--tm)}
+.form-select{cursor:pointer}
+.form-select option{background:var(--surf)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.6}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-group{margin-bottom:14px}
+
+.tag-chip{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--bd);color:var(--ts);cursor:pointer;background:var(--card);transition:all .2s;display:inline-block;margin:3px}
+.tag-chip.on{background:rgba(229,62,62,.12);border-color:var(--acc);color:#fc8181}
+.tag-chip:hover:not(.on){border-color:var(--bd2);color:var(--tp)}
+
+/* ========== TIMELINE PAGE ========== */
+.tl-toolbar{padding:12px 20px;background:var(--surf);border-bottom:1px solid var(--bd)}
+.tl-search{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:13px;padding:8px 14px;outline:none;transition:border-color .2s}
+.tl-search:focus{border-color:var(--acc)}
+.tl-search::placeholder{color:var(--tm)}
+.tl-filters{padding:10px 20px 12px;border-bottom:1px solid var(--bd);display:flex;gap:8px;overflow-x:auto}
+.tl-filters::-webkit-scrollbar{display:none}
+.fp{padding:5px 14px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--card);color:var(--ts);white-space:nowrap;transition:all .2s}
+.fp.on{border-color:var(--acc);color:#fc8181;background:rgba(229,62,62,.1)}
+.fp:hover:not(.on){border-color:var(--bd2);color:var(--tp)}
+.tl-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;border-bottom:1px solid var(--bd)}
+.sbox{background:var(--card);border-radius:var(--r);padding:9px 12px;text-align:center}
+.snum{font-size:20px;font-weight:700}
+.slbl{font-size:10px;color:var(--ts);margin-top:1px;letter-spacing:.04em}
+.c-r{color:var(--acc)}.c-g{color:#48bb78}.c-o{color:#ed8936}.c-b{color:#4299e1}
+.sort-row{padding:9px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.sort-lbl{font-size:12px;color:var(--ts)}
+.sbtns{display:flex;gap:4px}
+.sbtn{padding:4px 11px;border-radius:6px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:transparent;color:var(--ts);transition:all .2s}
+.sbtn.on{background:var(--card);color:var(--tp);border-color:var(--bd2)}
+.feed{padding:14px 20px;display:flex;flex-direction:column;gap:10px}
+
+/* LIST CARD */
+.lcard{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
+.lcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cc)}
+.lcard:hover{border-color:var(--bd2);background:var(--card2)}
+.lcard-top{padding:13px 16px 0 18px;display:flex;align-items:flex-start;gap:8px}
+.lbadges{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.tbdg{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;background:var(--tbb);color:var(--tbc);border:1px solid var(--tbbd)}
+.cbdg{padding:3px 9px;border-radius:20px;font-size:11px}
+.ltime{font-size:11px;color:var(--tm);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-top:2px}
+.lcard-mid{padding:10px 16px 0 18px}
+.lcard-title{font-size:14px;font-weight:500;color:var(--tp);line-height:1.55;margin-bottom:6px}
+.pt-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.pt-item{font-size:12px;color:var(--ts)}
+.vstrip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.vi{background:var(--inp);border:1px solid var(--bd);border-radius:5px;padding:4px 8px}
+.vi-t{font-size:9px;color:var(--tm);letter-spacing:.04em;margin-bottom:1px}
+.vi-v{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tp)}
+.vi-v.al{color:var(--acc)}.vi-v.wn{color:#ed8936}
+.vi-u{font-size:9px;color:var(--tm)}
+.ltags{display:flex;gap:5px;flex-wrap:wrap;padding:0 16px 8px 18px}
+.ltag{font-size:11px;color:var(--tm);padding:2px 7px;border-radius:4px;background:var(--inp);border:1px solid var(--bd)}
+.ltag.hl{color:#fc8181;border-color:rgba(229,62,62,.3);background:rgba(229,62,62,.07)}
+.expand-hint{font-size:11px;color:var(--tm);padding:4px 16px 10px 18px}
+.card-foot{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 12px 18px;border-top:1px solid var(--bd)}
+.av-row{display:flex;align-items:center;gap:7px}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.av-name{font-size:12px;color:var(--ts)}
+.reacts{display:flex;gap:8px}
+.rbtn{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ts);padding:3px 7px;border-radius:5px;border:none;background:transparent;transition:all .2s}
+.rbtn:hover{background:var(--inp);color:var(--tp)}
+.rbtn.liked{color:#fc8181}.rbtn.bkm{color:#fbd38d}
+.empty-feed{text-align:center;padding:50px 20px;color:var(--tm)}
+
+/* ========== DETAIL PAGE ========== */
+.det-back-bar{background:var(--surf);border-bottom:1px solid var(--bd);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.back-btn{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:13px;padding:7px 14px;display:flex;align-items:center;gap:6px;transition:all .2s}
+.back-btn:hover{border-color:var(--bd2)}
+.det-hdr-title{font-size:13px;font-weight:500;color:var(--tp);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.det-body{padding:18px 20px 40px}
+.det-sec{margin-bottom:22px}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.info-block{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px}
+.info-full{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.ib-lbl{font-size:10px;color:var(--tm);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase}
+.ib-val{font-size:13px;color:var(--tp);line-height:1.6}
+.ib-val.al{color:var(--acc)}.ib-val.wn{color:#ed8936}.ib-val.ok{color:#48bb78}
+.findings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.find-item{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px}
+.find-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.05em}
+.find-val{font-size:12px;color:var(--tp);font-weight:500;line-height:1.4}
+.find-val.al{color:var(--acc)}.find-val.wn{color:#ed8936}.find-val.ok{color:#48bb78}
+.vital-tbl{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;overflow-x:auto}
+.vt-head,.vt-row{display:grid;grid-template-columns:90px repeat(3,1fr);min-width:360px}
+.vt-hcell{padding:8px 10px;font-size:11px;font-weight:700;color:var(--ts);letter-spacing:.06em;text-align:center;background:var(--inp)}
+.vt-hcell:first-child{text-align:left}
+.vt-row{border-top:1px solid var(--bd)}
+.vt-row:nth-child(even){background:rgba(255,255,255,.015)}
+.vt-lbl{padding:9px 10px;font-size:11px;color:var(--ts)}
+.vt-cell{padding:9px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tp);display:flex;align-items:center;justify-content:center;gap:2px}
+.vt-cell.al{color:var(--acc)}.vt-cell.wn{color:#ed8936}.vt-cell.ok{color:#48bb78}
+.vt-unit{font-size:9px;color:var(--tm);font-weight:400}
+.reflect-block{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.rb-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rb-lbl{font-size:12px;font-weight:500;color:var(--tp)}
+.rb-body{font-size:13px;color:var(--ts);line-height:1.7}
+.det-tag{display:inline-block;font-size:12px;color:var(--ts);padding:4px 10px;border-radius:20px;background:var(--inp);border:1px solid var(--bd);margin:3px}
+.det-tag.hl{color:#fc8181;border-color:rgba(229,62,62,.35);background:rgba(229,62,62,.08)}
+.comment-box{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden}
+.comment-item{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;gap:10px}
+.comment-item:last-of-type{border-bottom:none}
+.c-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.c-meta{font-size:12px;font-weight:500;color:var(--tp);margin-bottom:3px}
+.c-time-sm{font-size:11px;color:var(--tm);font-weight:400;margin-left:8px}
+.c-text{font-size:13px;color:var(--ts);line-height:1.6}
+.c-input-row{padding:10px 14px;display:flex;gap:8px;border-top:1px solid var(--bd)}
+.c-inp{flex:1;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:13px;padding:8px 12px;outline:none}
+.c-inp:focus{border-color:var(--acc)}
+.c-inp::placeholder{color:var(--tm)}
+.c-send{background:var(--acc);border:none;border-radius:var(--r);color:#fff;font-size:13px;padding:8px 14px;transition:background .2s}
+.c-send:hover{background:#c53030}
+
+/* ========== POST FORM PAGE ========== */
+.post-wrap{padding:20px 20px 120px}
+.post-sec{margin-bottom:26px}
+
+/* Nickname bar */
+.nick-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:24px}
+.nick-av{width:36px;height:36px;border-radius:50%;background:rgba(229,62,62,.2);border:1.5px solid var(--acc);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--acc);flex-shrink:0}
+.nick-inp{flex:1;background:transparent;border:none;color:var(--tp);font-size:14px;outline:none}
+.nick-inp::placeholder{color:var(--tm)}
+.anon-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts)}
+.tog{width:32px;height:18px;border-radius:9px;background:var(--bd);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--acc)}
+.tog-k{width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s}
+.tog.on .tog-k{left:16px}
+
+/* Category cards */
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+.cat-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:14px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
+.cat-card:hover{border-color:var(--bd2)}
+.cat-card.on{border-color:var(--cc);background:rgba(var(--cr),0.08)}
+.cat-ic{width:36px;height:36px;border-radius:8px;background:rgba(var(--cr),.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.cat-name{font-size:13px;font-weight:500;color:var(--tp)}
+.cat-desc{font-size:11px;color:var(--ts);margin-top:2px}
+.cat-chk{margin-left:auto;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.cat-card.on .cat-chk{background:var(--cc);border-color:var(--cc)}
+.cat-card.on .cat-chk::after{content:'✓';font-size:10px;color:#fff}
+
+/* Type pills */
+.type-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.type-pill{padding:8px 16px;border-radius:20px;border:1px solid var(--bd);font-size:13px;cursor:pointer;transition:all .2s;color:var(--ts);background:var(--card)}
+.type-pill:hover{border-color:var(--bd2);color:var(--tp)}
+.type-pill.on{background:var(--pb);border-color:var(--pbd);color:var(--pc);font-weight:500}
+
+/* Vital cards in form */
+.vital-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:16px;margin-bottom:12px}
+.vital-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.vital-card-title{font-size:12px;font-weight:700;color:var(--ts);letter-spacing:.08em;text-transform:uppercase}
+.vital-card-time{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--tm)}
+.vital-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.vital-item-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.04em}
+.vital-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;padding:7px 8px;text-align:center;outline:none;transition:border-color .2s}
+.vital-inp:focus{border-color:var(--acc)}
+.vital-unit{font-size:10px;color:var(--tm);text-align:center;margin-top:3px}
+.vital-add-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--bd);border-radius:var(--r);color:var(--tm);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.vital-add-btn:hover{border-color:var(--bd2);color:var(--ts);background:var(--card)}
+
+/* Timepoint card */
+.tp-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:14px;overflow:hidden}
+.tp-card{transition:opacity .15s}
+.tp-card.dragging{opacity:.4}
+.tp-card.drag-over{border-color:var(--acc);border-style:dashed}
+.tp-card-hdr{background:var(--inp);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.tp-drag-handle{display:flex;flex-direction:column;gap:3px;padding:4px 6px;cursor:grab;flex-shrink:0;opacity:.45;transition:opacity .2s}
+.tp-drag-handle:hover{opacity:1}
+.tp-drag-handle:active{cursor:grabbing}
+.tp-drag-handle span{display:block;width:16px;height:2px;background:var(--ts);border-radius:1px}
+.tp-badge{background:var(--acc);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
+.tp-label-inp{flex:1;background:transparent;border:none;color:var(--tp);font-size:14px;font-weight:500;outline:none;min-width:0}
+.tp-label-inp::placeholder{color:var(--tm)}
+.tp-time-inp{width:96px;background:var(--card);border:1px solid var(--bd);border-radius:6px;color:var(--ts);font-family:'JetBrains Mono',monospace;font-size:13px;padding:4px 8px;outline:none;text-align:center;-webkit-appearance:none;color-scheme:dark;flex-shrink:0}
+.tp-time-inp:focus{border-color:var(--acc)}
+.tp-del{background:transparent;border:none;color:var(--tm);font-size:16px;padding:4px 6px;cursor:pointer;transition:color .2s;flex-shrink:0}
+.tp-del:hover{color:var(--acc)}
+.tp-body{padding:14px 16px}
+.tp-sub{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--tm);text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
+.tp-sub::before{content:'';display:inline-block;width:3px;height:12px;border-radius:2px;background:var(--sub-c);flex-shrink:0}
+.vital-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.vital-item-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.04em}
+.vital-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;padding:7px 8px;text-align:center;outline:none;transition:border-color .2s}
+.vital-inp:focus{border-color:var(--acc)}
+.vital-unit{font-size:10px;color:var(--tm);text-align:center;margin-top:3px}
+.tp-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tp-chip{padding:5px 11px;border-radius:20px;font-size:12px;border:1px solid var(--bd);color:var(--ts);cursor:pointer;background:var(--inp);transition:all .2s}
+.tp-chip.on{background:rgba(72,187,120,.12);border-color:#48bb78;color:#9ae6b4}
+.tp-chip:hover:not(.on){border-color:var(--bd2);color:var(--tp)}
+.tp-findings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tp-find-item{}
+.tp-find-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.04em}
+.tp-find-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-size:13px;padding:7px 10px;outline:none;transition:border-color .2s}
+.tp-find-inp:focus{border-color:var(--acc)}
+.tp-find-inp::placeholder{color:var(--tm)}
+.tp-ecg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.tp-note-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-size:13px;padding:8px 10px;outline:none;resize:vertical;min-height:60px;line-height:1.6;font-family:'Noto Sans JP',sans-serif}
+.tp-note-inp:focus{border-color:var(--acc)}
+.tp-note-inp::placeholder{color:var(--tm)}
+
+/* Submit bar */
+.submit-bar{background:var(--surf);border-top:1px solid var(--bd);padding:14px 20px;padding-bottom:calc(14px + var(--safe-bot));position:sticky;bottom:0;z-index:50;display:flex;gap:10px;align-items:center}
+.char-cnt{font-size:12px;color:var(--tm);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.draft-btn{padding:10px 18px;background:transparent;border:1px solid var(--bd);border-radius:var(--r);color:var(--ts);font-size:13px;transition:all .2s;white-space:nowrap}
+.draft-btn:hover{border-color:var(--bd2);color:var(--tp)}
+.submit-btn{flex:1;padding:11px 20px;background:var(--acc);border:none;border-radius:var(--r);color:#fff;font-size:14px;font-weight:700;letter-spacing:.05em;transition:all .2s}
+.submit-btn:hover{background:#c53030}
+.submit-btn:active{transform:scale(.98)}
+
+/* Toast */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:#2ea043;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ========== MYPAGE ========== */
+.my-wrap{padding:20px}
+.my-profile{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:20px;margin-bottom:20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.my-av-big{width:60px;height:60px;border-radius:50%;background:rgba(229,62,62,.2);border:2px solid var(--acc);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--acc)}
+.my-name{font-size:18px;font-weight:700;color:var(--tp)}
+.my-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+.my-stat{background:var(--inp);border-radius:var(--r);padding:12px;text-align:center}
+.my-stat-n{font-size:22px;font-weight:700;color:var(--acc)}
+.my-stat-l{font-size:11px;color:var(--ts)}
+.my-section-title{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--ts);text-transform:uppercase;margin-bottom:12px}
+.my-posts{display:flex;flex-direction:column;gap:8px}
+.my-post-item{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:border-color .2s}
+.my-post-item:hover{border-color:var(--bd2)}
+.my-post-title{font-size:13px;font-weight:500;color:var(--tp);margin-bottom:4px}
+.my-post-meta{font-size:11px;color:var(--tm);display:flex;gap:10px}
+
+@media(max-width:600px){
+  .form-row{grid-template-columns:1fr}
+  .vital-grid{grid-template-columns:repeat(2,1fr)}
+  .cat-grid{grid-template-columns:1fr}
+  .findings-grid{grid-template-columns:repeat(2,1fr)}
+  .info-grid{grid-template-columns:1fr}
+  .tl-stats{grid-template-columns:repeat(2,1fr)}
+  .my-stats{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN ========== -->
+<div id="scr-login" class="screen active">
+  <div class="login-logo">
+    <div class="login-icon">🚑</div>
+    <div style="text-align:center">
+      <div class="login-title">救急ケースノート</div>
+      <div class="login-sub" style="margin-top:4px">EMS CASE REPORT SYSTEM</div>
+    </div>
+    <div class="login-badge">🔒 署内限定システム</div>
+  </div>
+  <div class="login-card">
+    <div class="login-tabs">
+      <button class="login-tab on" id="tab-login" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="login-tab" id="tab-signup" onclick="switchAuthTab('signup')">新規登録</button>
+    </div>
+
+    <!-- ログインフォーム -->
+    <div id="form-login">
+      <label class="login-label">メールアドレス</label>
+      <input class="login-input" type="email" id="login-email" placeholder="メールアドレス" autocomplete="email" style="letter-spacing:.04em;margin-bottom:12px"/>
+      <label class="login-label">パスワード</label>
+      <input class="login-input" type="password" id="login-pass" placeholder="パスワード" autocomplete="current-password"/>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">
+        <span id="login-btn-txt">ログイン</span>
+        <div class="login-spinner" id="login-spinner"></div>
+      </button>
+      <div class="login-err" id="login-err"></div>
+      <button class="login-link" onclick="switchAuthTab('reset')">パスワードを忘れた方はこちら</button>
+    </div>
+
+    <!-- 新規登録フォーム -->
+    <div id="form-signup" style="display:none">
+      <label class="login-label">メールアドレス</label>
+      <input class="login-input" type="email" id="signup-email" placeholder="メールアドレス" style="letter-spacing:.04em;margin-bottom:12px"/>
+      <label class="login-label">パスワード（6文字以上）</label>
+      <input class="login-input" type="password" id="signup-pass" placeholder="パスワードを設定" style="margin-bottom:12px"/>
+      <label class="login-label">ニックネーム</label>
+      <input class="login-input" type="text" id="signup-nick" placeholder="例：田中・タナカ隊員" style="letter-spacing:.04em"/>
+      <button class="login-btn" id="signup-btn" onclick="doSignup()">
+        <span id="signup-btn-txt">アカウントを作成</span>
+        <div class="login-spinner" id="signup-spinner"></div>
+      </button>
+      <div class="login-err" id="signup-err"></div>
+      <div class="login-success" id="signup-success">
+        確認メールを送信しました。<br>メール内のリンクをタップしてから<br>ログインしてください。
+      </div>
+    </div>
+
+    <!-- パスワードリセットフォーム -->
+    <div id="form-reset" style="display:none">
+      <p style="font-size:13px;color:var(--ts);margin-bottom:16px;line-height:1.7">登録したメールアドレスを入力してください。パスワード再設定のリンクを送信します。</p>
+      <label class="login-label">メールアドレス</label>
+      <input class="login-input" type="email" id="reset-email" placeholder="メールアドレス" style="letter-spacing:.04em"/>
+      <button class="login-btn" id="reset-btn" onclick="doReset()">
+        <span id="reset-btn-txt">リセットメールを送信</span>
+        <div class="login-spinner" id="reset-spinner"></div>
+      </button>
+      <div class="login-err" id="reset-err"></div>
+      <div class="login-success" id="reset-success">パスワード再設定メールを送信しました。</div>
+      <button class="login-link" onclick="switchAuthTab('login')">← ログインに戻る</button>
+    </div>
+
+    <div class="login-hint">※このシステムは署内のEMS隊員専用です</div>
+  </div>
+</div>
+
+<!-- ========== APP ========== -->
+<div id="app" class="screen">
+  <div class="app-hdr">
+    <div class="logo">
+      <div class="logo-ic">🚑</div>
+      <div>
+        <div class="logo-tx">救急ケースノート</div>
+        <div class="logo-sb">EMS CASE REPORT</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-user" id="hdr-user"></span>
+      <div class="hdr-bdg">署内限定</div>
+      <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="app-nav">
+    <div class="ntab on" onclick="showPage('timeline',this)"><div class="ndot"></div>タイムライン</div>
+    <div class="ntab" onclick="showPage('post',this)"><div class="ndot"></div>症例投稿</div>
+    <div class="ntab" onclick="showPage('mypage',this)"><div class="ndot"></div>マイページ</div>
+  </div>
+  <div class="app-content">
+
+    <!-- TIMELINE -->
+    <div id="page-timeline" class="page active">
+      <div class="tl-toolbar"><input class="tl-search" placeholder="症例を検索..." oninput="doSearch(this.value)"/></div>
+      <div class="tl-filters" id="tl-filters">
+        <div class="fp on" onclick="setFilter('all',this)">すべて</div>
+        <div class="fp" onclick="setFilter('悩んだ症例',this)">😓 悩んだ</div>
+        <div class="fp" onclick="setFilter('迷った症例',this)">🤔 迷った</div>
+        <div class="fp" onclick="setFilter('よくできた',this)">✅ よくできた</div>
+        <div class="fp" onclick="setFilter('学びになった',this)">📚 学び</div>
+        <div class="fp" onclick="setFilter('ヒヤリハット',this)">⚠️ ヒヤリ</div>
+        <div class="fp" onclick="setFilter('CPA・蘇生',this)">💔 CPA</div>
+        <div class="fp" onclick="setFilter('外傷・多発外傷',this)">🩹 外傷</div>
+        <div class="fp" onclick="setFilter('内因性疾患',this)">🧠 内因性</div>
+        <div class="fp" onclick="setFilter('小児・産科',this)">👶 小児</div>
+      </div>
+      <div class="tl-stats">
+        <div class="sbox"><div class="snum c-r" id="st-total">6</div><div class="slbl">総投稿数</div></div>
+        <div class="sbox"><div class="snum c-g" id="st-week">3</div><div class="slbl">今週の投稿</div></div>
+        <div class="sbox"><div class="snum c-o" id="st-cpa">3</div><div class="slbl">CPA症例</div></div>
+        <div class="sbox"><div class="snum c-b" id="st-cmt">31</div><div class="slbl">コメント数</div></div>
+      </div>
+      <div class="sort-row">
+        <span class="sort-lbl" id="cnt-lbl">6件表示中</span>
+        <div class="sbtns">
+          <button class="sbtn on" onclick="setSort('new',this)">新着順</button>
+          <button class="sbtn" onclick="setSort('like',this)">いいね順</button>
+          <button class="sbtn" onclick="setSort('cmt',this)">コメント順</button>
+        </div>
+      </div>
+      <div class="feed" id="feed"></div>
+    </div>
+
+    <!-- DETAIL -->
+    <div id="page-detail" class="page">
+      <div class="det-back-bar">
+        <button class="back-btn" onclick="backToTimeline()">← 一覧へ戻る</button>
+        <div class="det-hdr-title" id="det-hdr-title"></div>
+      </div>
+      <div class="det-body" id="det-body"></div>
+    </div>
+
+    <!-- POST FORM -->
+    <div id="page-post" class="page">
+      <div class="post-wrap">
+
+        <!-- 投稿者 -->
+        <div class="nick-bar">
+          <div class="nick-av" id="post-av">?</div>
+          <span class="nick-inp" id="post-nick-disp" style="flex:1;font-size:14px;color:var(--tp)">—</span>
+          <div class="anon-row">
+            <span>匿名</span>
+            <div class="tog" id="anon-tog" onclick="toggleAnon()"><div class="tog-k"></div></div>
+          </div>
+        </div>
+
+        <!-- Step 1: カテゴリ -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">1 　症例カテゴリ</div><div class="sec-line"></div></div>
+          <div class="cat-grid" id="cat-grid">
+            <div class="cat-card" style="--cc:#e53e3e;--cr:229,62,62" onclick="selCat(this)"><div class="cat-ic">💔</div><div><div class="cat-name">CPA・蘇生</div><div class="cat-desc">心停止・ROSC・蘇生処置</div></div><div class="cat-chk"></div></div>
+            <div class="cat-card" style="--cc:#ed8936;--cr:237,137,54" onclick="selCat(this)"><div class="cat-ic">🩹</div><div><div class="cat-name">外傷・多発外傷</div><div class="cat-desc">交通外傷・転落・熱傷</div></div><div class="cat-chk"></div></div>
+            <div class="cat-card" style="--cc:#4299e1;--cr:66,153,225" onclick="selCat(this)"><div class="cat-ic">🧠</div><div><div class="cat-name">内因性疾患</div><div class="cat-desc">脳卒中・ACS・呼吸不全</div></div><div class="cat-chk"></div></div>
+            <div class="cat-card" style="--cc:#48bb78;--cr:72,187,120" onclick="selCat(this)"><div class="cat-ic">👶</div><div><div class="cat-name">小児・産科</div><div class="cat-desc">小児救急・分娩・新生児</div></div><div class="cat-chk"></div></div>
+            <div class="cat-card" style="--cc:#9f7aea;--cr:159,122,234" onclick="selCat(this)"><div class="cat-ic">📋</div><div><div class="cat-name">その他</div><div class="cat-desc">精神・中毒・環境障害</div></div><div class="cat-chk"></div></div>
+          </div>
+        </div>
+
+        <!-- Step 2: 投稿タイプ -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">2 　症例の性質</div><div class="sec-line"></div></div>
+          <div class="type-pills">
+            <div class="type-pill" style="--pb:rgba(229,62,62,.1);--pbd:#e53e3e;--pc:#fc8181" onclick="selType(this)">😓 悩んだ症例</div>
+            <div class="type-pill" style="--pb:rgba(237,137,54,.1);--pbd:#ed8936;--pc:#fbd38d" onclick="selType(this)">🤔 迷った症例</div>
+            <div class="type-pill" style="--pb:rgba(72,187,120,.1);--pbd:#48bb78;--pc:#9ae6b4" onclick="selType(this)">✅ よくできた</div>
+            <div class="type-pill" style="--pb:rgba(66,153,225,.1);--pbd:#4299e1;--pc:#90cdf4" onclick="selType(this)">📚 学びになった</div>
+            <div class="type-pill" style="--pb:rgba(159,122,234,.1);--pbd:#9f7aea;--pc:#d6bcfa" onclick="selType(this)">⚠️ ヒヤリハット</div>
+          </div>
+        </div>
+
+        <!-- Step 3: 患者概要 -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">3 　患者概要</div><div class="sec-line"></div></div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label"><div class="req"></div>年齢</div>
+              <div style="display:flex;gap:8px">
+                <input class="form-input" type="number" placeholder="例：72" style="max-width:80px" id="f-age"/>
+                <select class="form-select" id="f-age-unit"><option>歳</option><option>ヶ月</option><option>日齢</option></select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label"><div class="req"></div>性別</div>
+              <select class="form-select" id="f-sex"><option value="">選択...</option><option>男性</option><option>女性</option><option>不明</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label">発生場所</div>
+              <select class="form-select" id="f-place"><option value="">選択...</option><option>自宅（屋内）</option><option>自宅（屋外）</option><option>道路・屋外</option><option>職場・施設</option><option>医療施設</option><option>車内</option><option>その他</option></select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label">搬送先</div>
+              <select class="form-select" id="f-dest"><option value="">選択...</option><option>救命救急センター</option><option>ER・一般病院</option><option>循環器・カテーテル</option><option>脳卒中センター</option><option>小児科・NICU</option><option>産科</option><option>DNAR・看取り</option></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label"><div class="req"></div>通報内容</div>
+            <textarea class="form-textarea" id="f-chief" placeholder="例：自宅で倒れているのを発見、意識がない。すぐ来てほしい。" oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">現場状況の詳細</div>
+            <textarea class="form-textarea" id="f-scene" placeholder="例：目撃あり・ダウンタイム約5分。バイスタンダーCPR実施中に現着。AEDはショック不適応。" style="min-height:90px" oninput="calcChars()"></textarea>
+          </div>
+        </div>
+
+        <!-- Step 4: 既往歴・内服薬 -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">4 　既往歴・内服薬・アレルギー</div><div class="sec-line"></div></div>
+          <div class="form-group">
+            <div class="form-label">既往歴</div>
+            <textarea class="form-textarea" id="f-pmhx" placeholder="例：高血圧（10年）、2型糖尿病、陳旧性心筋梗塞（3年前）" style="min-height:70px" oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label">内服薬</div>
+              <textarea class="form-textarea" id="f-meds" placeholder="例：アムロジピン5mg、アスピリン100mg" style="min-height:70px" oninput="calcChars()"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <div class="form-label">アレルギー</div>
+              <textarea class="form-textarea" id="f-allergy" placeholder="例：ペニシリン系（本人申告）" style="min-height:70px" oninput="calcChars()"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: 時系列記録（所見・バイタル・処置） -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#9f7aea"></div><div class="sec-title-sm">5 　時系列記録（所見・バイタル・処置）</div><div class="sec-line"></div></div>
+          <p style="font-size:12px;color:var(--tm);margin-bottom:14px">各タイムポイントごとに身体所見・バイタル・ECG・処置をまとめて記録できます</p>
+          <div id="tp-cards">
+            <!-- タイムポイントカードはJSで生成 -->
+          </div>
+          <button class="vital-add-btn" onclick="addTimepoint()">＋ タイムポイントを追加</button>
+        </div>
+
+        <!-- Step 6: 振り返り -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">6 　振り返り・学び</div><div class="sec-line"></div></div>
+          <div class="form-group">
+            <div class="form-label"><div class="req"></div>迷った点・判断に悩んだこと</div>
+            <textarea class="form-textarea" id="f-worry" placeholder="例：PEA継続中の薬剤投与タイミングが不明確だった。バイタルの変化をどう評価すればよかったか..." oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">よかった点・工夫したこと</div>
+            <textarea class="form-textarea" id="f-good" placeholder="例：チームで役割分担を明確にしたことでスムーズに処置できた。" oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">次回に活かしたいこと・学びのポイント</div>
+            <textarea class="form-textarea" id="f-learn" placeholder="例：CPA症例では4H4Tの系統的評価をチェックリストで確認する。" oninput="calcChars()"></textarea>
+          </div>
+        </div>
+
+        <!-- Step 7: タグ -->
+        <div class="post-sec">
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">7 　タグ</div><div class="sec-line"></div></div>
+          <div id="tag-chips">
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#ROSC</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#VF</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#PEA</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#心静止</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#脳卒中</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#TIA</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#ACS</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#ST上昇</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#心房細動</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#多発外傷</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#出血性ショック</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#骨盤骨折</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#小児</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#熱性けいれん</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#低血糖</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#気道確保困難</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#バイスタンダー</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#チームワーク</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#MC指示</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#ヒヤリハット</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#非典型的症状</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#特定行為</div>
+          </div>
+        </div>
+
+      </div><!-- /post-wrap -->
+
+      <div class="submit-bar">
+        <span class="char-cnt" id="char-cnt">0文字</span>
+        <button class="draft-btn">下書き</button>
+        <button class="submit-btn" onclick="submitCase()">症例を投稿する →</button>
+      </div>
+    </div><!-- /page-post -->
+
+    <!-- MYPAGE -->
+    <div id="page-mypage" class="page">
+      <div class="my-wrap">
+        <div class="my-profile">
+          <div class="my-av-big" id="my-av-big">?</div>
+          <div class="my-name" id="my-name-disp">—</div>
+          <div style="font-size:12px;color:var(--tm)" id="my-email-disp"></div>
+          <div class="my-stats">
+            <div class="my-stat"><div class="my-stat-n" id="my-stat-posts">0</div><div class="my-stat-l">投稿数</div></div>
+            <div class="my-stat"><div class="my-stat-n" id="my-stat-likes">0</div><div class="my-stat-l">いいね数</div></div>
+            <div class="my-stat"><div class="my-stat-n" id="my-stat-cmts">0</div><div class="my-stat-l">コメント</div></div>
+          </div>
+        </div>
+
+        <!-- ニックネーム編集 -->
+        <div class="my-section-title">プロフィール設定</div>
+        <div style="background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:20px">
+          <div style="font-size:12px;color:var(--ts);margin-bottom:6px">ニックネーム</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="my-nick-inp" class="form-input" placeholder="ニックネームを入力" style="flex:1"/>
+            <button onclick="saveNickname()" style="padding:10px 16px;background:var(--acc);border:none;border-radius:var(--r);color:#fff;font-size:13px;font-weight:700;white-space:nowrap">保存</button>
+          </div>
+        </div>
+
+        <div class="my-section-title">自分の投稿</div>
+        <div class="my-posts" id="my-posts"><div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">読み込み中...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+const CASES = [
+  {id:1,type:'悩んだ症例',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+   title:'PEA継続中の薬剤投与タイミングに迷った心停止症例',
+   pt:{age:'72歳',sex:'男性',place:'自宅（居間）',transport:'救命救急センター',chief:'「主人が倒れて動かない。息をしていないかもしれない」'},
+   scene:'家族が居間で倒れているのを発見し119番通報。倒れた瞬間は目撃なし。推定ダウンタイム約5分。バイスタンダーCPRは未実施。',
+   pmhx:'高血圧（10年）、2型糖尿病、陳旧性心筋梗塞（3年前）',
+   meds:'アムロジピン5mg、メトホルミン、アスピリン100mg',allergy:'なし',
+   timepoints:[
+     {label:'初期評価時',time:'10:14',
+      findings:{consciousness:'JCS 300',breathing:'自発呼吸なし',circulation:'頸動脈触知なし',pupils:'散大・対光反射なし',skin:'蒼白・冷感'},
+      obs:'CPR中のため詳細な所見評価は困難。明らかな外傷なし。',
+      vitals:{bp:'測定不可',hr:'---',spo2:'測定不可',rr:'0',bg:'---',temp:'---',etco2:'---'},
+      rhythm:'PEA',st:'評価困難',ecgNote:'サイナスリズム様波形 52bpm。胸骨圧迫再開後VFに移行を確認。',
+      treatment:['BLS（CPR継続）','AED（ショック不適応）','12誘導ECG']},
+     {label:'現場',time:'10:19',
+      findings:{consciousness:'JCS 300',breathing:'自発呼吸なし',circulation:'頸動脈触知なし',pupils:'散大・対光反射なし',skin:'蒼白・冷感'},
+      obs:'VF確認後、除細動1回施行。気管挿管（2回目）成功。ETCO2波形出現。',
+      vitals:{bp:'---',hr:'VF→SR',spo2:'---',rr:'BVM',bg:'124',temp:'---',etco2:'18'},
+      rhythm:'VF→SR',st:'評価困難',ecgNote:'除細動後SR復帰を確認。',
+      treatment:['AED（除細動1回→SR）','気管挿管（2回目成功）','静脈路確保（18G）','アドレナリン1mg静注']},
+     {label:'救急車内',time:'10:26',
+      findings:{consciousness:'JCS 300',breathing:'BVM換気中',circulation:'頸動脈触知微弱',pupils:'縮瞳傾向',skin:'蒼白・冷感'},
+      obs:'ROSC後も意識回復なし。カプノグラフィー波形安定。アドレナリン2回目投与タイミングで隊員間で意見が分かれた。',
+      vitals:{bp:'72/40',hr:'88(SR)',spo2:'95%',rr:'BVM',bg:'124',temp:'---',etco2:'28'},
+      rhythm:'洞調律（SR）',st:'評価困難',ecgNote:'SR維持。ST変化の評価は搬送優先のため省略。',
+      treatment:['カプノグラフィー装着','アドレナリン2回目（10分後）','バイタル継続測定']}
+   ],
+   tags:['#PEA','#VF','#ROSC','#アドレナリン'],
+   reflect:{worry:'PEA継続中のアドレナリン投与タイミングについてチーム内で判断が分かれた。プロトコル上は3〜5分ごとだが、CPR質のばらつきがあり確信が持てなかった。',
+     good:'VFへの移行を12誘導で早期に検出できた。除細動の判断は迅速だった。ETCO2装着で換気評価ができた。',
+     learn:'PEA症例では可逆的原因（4H4T）の系統的評価が重要。次回はチェックリストを活用し全員で確認する。'},
+   author:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',
+   time:'2時間前',daysAgo:0,likes:12,
+   comments:[
+     {name:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',time:'1時間前',text:'4H4Tの評価、現場でどうやって素早くやりましたか？チェックリストがあれば共有してほしいです。'},
+     {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'45分前',text:'アドレナリンのタイミングは本当に悩みますよね。ROSCしたのは素晴らしいです。'}
+   ],liked:false,bookmarked:false},
+
+  {id:2,type:'よくできた',cat:'外傷・多発外傷',cc:'#ed8936',cr:'237,137,54',
+   title:'骨盤骨折・出血性ショック疑いでのLoad and Go判断',
+   pt:{age:'34歳',sex:'男性',place:'国道交差点',transport:'救命救急センター（外傷）',chief:'バイクと車が衝突している。バイクの人が道路に倒れていて動かない』'},
+   scene:'バイクと乗用車の正面衝突。バイク運転手が道路上に転倒。推定衝突速度60km/h。バイスタンダーが左大腿部を圧迫止血中。',
+   pmhx:'特記なし',meds:'なし',allergy:'ペニシリン系（本人申告）',
+   timepoints:[
+     {label:'初期評価時',time:'14:32',
+      findings:{consciousness:'GCS 14（E3V5M6）',breathing:'頻呼吸（26回/分）',circulation:'橈骨動脈触知弱・頻脈',pupils:'正常・対光反射あり',skin:'蒼白・冷汗著明'},
+      obs:'骨盤部に強い圧痛。左大腿部変形・腫脹あり。開放創から出血継続。頸椎固定を先行。',
+      vitals:{bp:'88/60',hr:'128',spo2:'96%',rr:'26',bg:'---',temp:'---',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'洞性頻脈128bpm。ST変化なし。',
+      treatment:['頸椎固定（頸椎カラー）','バックボード固定','止血処置（圧迫）','酸素投与（15L）']},
+     {label:'現場',time:'14:37',
+      findings:{consciousness:'GCS 14',breathing:'頻呼吸（28回/分）',circulation:'橈骨動脈触知弱・さらに悪化',pupils:'正常',skin:'蒼白・冷汗'},
+      obs:'骨盤骨折疑い・出血性ショックと判断。現場処置を最小限にしLoad and Goを決断。骨盤ベルト装着。',
+      vitals:{bp:'82/54',hr:'136',spo2:'94%',rr:'28',bg:'---',temp:'35.8',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'頻脈増悪傾向。',
+      treatment:['骨盤ベルト固定','静脈路確保×2（16G）','輸液（細胞外液500mL）']},
+     {label:'救急車内',time:'14:44',
+      findings:{consciousness:'GCS 13',breathing:'頻呼吸（22回/分）',circulation:'橈骨動脈触知やや改善',pupils:'正常',skin:'蒼白'},
+      obs:'輸液後わずかにBP改善。病院への事前連絡でER・外科・整形が準備中。現場滞在時間8分。',
+      vitals:{bp:'90/62',hr:'122',spo2:'97%',rr:'22',bg:'98',temp:'35.8',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'頻脈は継続するが改善傾向。',
+      treatment:['バイタル継続測定','輸液継続','病院事前連絡（外傷チーム要請）']}
+   ],
+   tags:['#多発外傷','#骨盤骨折','#出血性ショック','#迅速搬送'],
+   reflect:{worry:'骨盤骨折の確定診断はX線なしでは難しく、骨盤ベルトの装着判断に少し迷った。',
+     good:'現場滞在時間を8分に抑えられた。病院事前連絡でER準備が整っており、スムーズに引き継ぎできた。',
+     learn:'出血性ショックではLoad and Goの判断が最優先。現場処置の優先順位を出動前にチームで確認する習慣をつける。'},
+   author:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',
+   time:'5時間前',daysAgo:0,likes:18,
+   comments:[
+     {name:'伊藤 健太',av:'伊',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'4時間前',text:'骨盤ベルト、現場でうまく装着できましたか？コツがあれば教えてください。'},
+     {name:'高橋 奈々',av:'高',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'3時間前',text:'現場8分は素晴らしい。日頃のチーム訓練の成果ですね。'}
+   ],liked:true,bookmarked:true},
+
+  {id:3,type:'迷った症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
+   title:'失語症状のみ・四肢麻痺なし――TIA vs 脳梗塞の搬送先判断',
+   pt:{age:'65歳',sex:'男性',place:'自宅（書斎）',transport:'脳卒中センター（総合病院）',chief:'「夫が突然しゃべれなくなった。呼びかけには反応するが言葉が出ない」'},
+   scene:'妻が突然夫の発語が困難になったことに気づき119番。発症から推定15分で現着。本人は意識清明で指示には従えるが発語不能。右口角の軽度下垂あり。',
+   pmhx:'高血圧（15年）、心房細動（2年、抗凝固療法中）',
+   meds:'ワーファリン3mg/日、アムロジピン5mg',allergy:'なし',
+   timepoints:[
+     {label:'初期評価時',time:'09:08',
+      findings:{consciousness:'JCS 1（清明）',breathing:'正常（16回/分）',circulation:'不整脈あり（AF）',pupils:'正常・対光反射あり',skin:'正常'},
+      obs:'FACE陽性（右口角下垂）。上肢挙上テストで右腕に軽度の落下傾向。発語なし・理解は保たれている様子。',
+      vitals:{bp:'178/102',hr:'78(AF)',spo2:'98%',rr:'16',bg:'135',temp:'36.4',etco2:'---'},
+      rhythm:'心房細動（AF）',st:'変化なし',ecgNote:'AF、平均心拍78bpm。ST変化なし。',
+      treatment:['バイタル測定','12誘導ECG','血糖測定','神経学的評価（FACE・CPSS）']},
+     {label:'現場',time:'09:13',
+      findings:{consciousness:'JCS 1',breathing:'正常',circulation:'AF継続',pupils:'正常',skin:'正常'},
+      obs:'CPSSスコア2点（顔面＋上肢）。AF＋抗凝固療法中という情報からER vs 脳卒中センターで隊内協議。MC指示を仰ぐことを決定。',
+      vitals:{bp:'174/100',hr:'80(AF)',spo2:'98%',rr:'16',bg:'135',temp:'36.4',etco2:'---'},
+      rhythm:'心房細動（AF）',st:'変化なし',ecgNote:'AF継続。',
+      treatment:['MC指示（脳卒中センターへ搬送決定）','酸素投与（2L経鼻）']},
+     {label:'救急車内',time:'09:18',
+      findings:{consciousness:'JCS 1',breathing:'正常',circulation:'AF継続',pupils:'正常',skin:'正常'},
+      obs:'症状の変化なし。病院へ事前連絡済み。ワーファリン内服・発症時刻・CPSSスコアを申し送り予定。',
+      vitals:{bp:'170/98',hr:'82(AF)',spo2:'99%',rr:'16',bg:'135',temp:'36.4',etco2:'---'},
+      rhythm:'心房細動（AF）',st:'変化なし',ecgNote:'AF安定。',
+      treatment:['バイタル継続測定','神経学的変化の継続観察','病院事前連絡']}
+   ],
+   tags:['#脳卒中','#TIA','#心房細動','#CPSS','#搬送先判断'],
+   reflect:{worry:'失語のみで四肢麻痺なし。FACEは陽性・CPSSは2点でボーダーライン。TIAか完成梗塞かの判断と搬送先選定で迷い、MC指示を仰いだ。',
+     good:'AF＋抗凝固療法中という情報を早期に取得し、心原性塞栓の可能性を意識した判断ができた。',
+     learn:'AF＋失語は心原性脳塞栓を強く疑う組み合わせ。この場合は積極的に脳卒中センターを選択する基準を持つ。'},
+   author:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',
+   time:'昨日',daysAgo:1,likes:9,
+   comments:[
+     {name:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'20時間前',text:'AF＋失語はほぼ心原性ですよね。搬送先の判断は正解だと思います。後でどうなったか教えてください。'}
+   ],liked:false,bookmarked:false},
+
+  {id:4,type:'ヒヤリハット',cat:'小児・産科',cc:'#48bb78',cr:'72,187,120',
+   title:'熱性けいれん後の意識回復遅延――初期評価で血糖を測定し忘れたヒヤリ',
+   pt:{age:'3歳',sex:'男性',place:'自宅（リビング）',transport:'小児救急病院',chief:'「子どもが熱を出していて、突然けいれんした。今は止まったが意識がない」'},
+   scene:'母親が発熱中の子どものけいれんを目撃し119番。到着時けいれんは自然終息（持続約2分）していたが意識回復が遅延していた。熱性けいれんの既往あり。',
+   pmhx:'熱性けいれん既往1回（1歳時）',meds:'なし',allergy:'なし（確認済み）',
+   timepoints:[
+     {label:'初期評価時',time:'15:52',
+      findings:{consciousness:'JCS 10（呼びかけで開眼）',breathing:'やや促迫（28回/分）',circulation:'頻脈（140bpm）・橈骨動脈良好',pupils:'等円・縮瞳・対光反射あり',skin:'熱感・発赤あり'},
+      obs:'体温39.2℃。項部硬直なし。四肢トーヌス正常。血糖測定を失念（後に反省点として認識）。',
+      vitals:{bp:'100/60',hr:'140',spo2:'99%',rr:'28',bg:'未測定',temp:'39.2',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'洞性頻脈140bpm。',
+      treatment:['気道確保・側臥位管理','酸素投与（マスク5L）','体温測定','神経学的評価']},
+     {label:'現場',time:'15:58',
+      findings:{consciousness:'JCS 3（自発開眼あり）',breathing:'正常化傾向（24回/分）',circulation:'頻脈（132bpm）・改善傾向',pupils:'等円・対光反射あり',skin:'熱感継続'},
+      obs:'意識レベルが少し改善。てんかん重積との鑑別のため、遅延したが血糖測定を実施（82mg/dL）。低血糖は否定。',
+      vitals:{bp:'98/58',hr:'132',spo2:'99%',rr:'24',bg:'82',temp:'39.2',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'頻脈継続。',
+      treatment:['血糖測定（82mg/dL・遅延）','バイタル継続観察','搬送判断（小児救急病院へ）']},
+     {label:'救急車内',time:'16:05',
+      findings:{consciousness:'JCS 1（意識回復）',breathing:'正常（22回/分）',circulation:'頻脈改善（126bpm）',pupils:'正常',skin:'熱感'},
+      obs:'意識が回復し、母親の声に反応して泣き始めた。バイタル安定。病院へ事前連絡。',
+      vitals:{bp:'100/62',hr:'126',spo2:'99%',rr:'22',bg:'82',temp:'39.0',etco2:'---'},
+      rhythm:'洞性頻脈',st:'変化なし',ecgNote:'頻脈改善傾向。',
+      treatment:['バイタル継続測定','意識レベル継続評価','病院事前連絡（熱性けいれん・血糖値報告）']}
+   ],
+   tags:['#小児','#熱性けいれん','#血糖測定','#ヒヤリハット','#意識障害'],
+   reflect:{worry:'初期評価で血糖測定を失念。意識回復遅延の原因として低血糖を早期に除外できなかった。てんかん重積との鑑別が遅れた可能性がある。',
+     good:'けいれん終息後の気道管理と側臥位は適切だった。意識レベルの推移を継続観察できていた。',
+     learn:'小児の意識障害では低血糖は必須の鑑別項目。発熱があっても血糖測定を初期評価に組み込む。ABCDEに血糖を加えたチェックリストを活用する。'},
+   author:'鈴木 愛',av:'鈴',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',
+   time:'2日前',daysAgo:2,likes:21,
+   comments:[
+     {name:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'2日前',text:'血糖忘れは自分もやったことがあります。小児の意識障害チェックリストを作りたいですね。'},
+     {name:'松本 拓海',av:'松',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'1日前',text:'正直に報告してくれてありがとうございます。チーム全体の学びになります。'}
+   ],liked:false,bookmarked:true},
+
+  {id:5,type:'学びになった',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+   title:'バイスタンダーCPR継続中に現着・VF除細動でROSCした症例',
+   pt:{age:'58歳',sex:'男性',place:'職場（会議室）',transport:'循環器専門病院（カテーテル室直行）',chief:'「会議中に同僚が突然倒れた。意識がない。AEDを持ってきてCPRをしています」'},
+   scene:'会議中に突然意識を失い転倒。同僚がすぐにCPRを開始し職場のAEDを使用。バイスタンダー2回除細動後もVF継続中に救急隊が現着（119番から約6分）。',
+   pmhx:'高脂血症（未治療）、喫煙歴30年（現喫煙者）',meds:'なし',allergy:'なし',
+   timepoints:[
+     {label:'初期評価時',time:'11:03',
+      findings:{consciousness:'JCS 300',breathing:'自発呼吸なし',circulation:'頸動脈触知なし',pupils:'散大・対光反射なし',skin:'蒼白'},
+      obs:'バイスタンダーのCPRは良質。AEDアドバイス：ショック適応（VF）。3回目の除細動をすみやかに施行。',
+      vitals:{bp:'測定不可',hr:'VF',spo2:'測定不可',rr:'0',bg:'---',temp:'---',etco2:'---'},
+      rhythm:'VF',st:'評価困難',ecgNote:'VF継続。バイスタンダー2回施行後も持続VF。3回目除細動施行→SR復帰。',
+      treatment:['CPR引き継ぎ','AED（3回目→SR復帰）','気管挿管','カプノグラフィー装着']},
+     {label:'現場（ROSC後）',time:'11:08',
+      findings:{consciousness:'JCS 200',breathing:'自発呼吸出現（浅）',circulation:'頸動脈触知可（微弱）',pupils:'縮瞳傾向',skin:'蒼白から改善傾向'},
+      obs:'ROSC確認。気管挿管後ETCO2波形良好（35mmHg）。12誘導でII・III・aVFのST上昇を確認し、搬送先変更を即座に検討。',
+      vitals:{bp:'84/50',hr:'92(SR)',spo2:'91%',rr:'自発8回',bg:'188',temp:'36.1',etco2:'35'},
+      rhythm:'洞調律（SR）',st:'ST上昇（下壁）',ecgNote:'SR復帰後、II・III・aVFに明確なST上昇。下壁梗塞を強く疑い循環器専門病院へ変更。',
+      treatment:['静脈路確保（18G）','12誘導ECG（ST上昇確認）','搬送先変更（循環器→カテ室直行）','MC指示']},
+     {label:'救急車内',time:'11:15',
+      findings:{consciousness:'JCS 200',breathing:'BVM補助中（自発呼吸あり）',circulation:'橈骨動脈触知可',pupils:'縮瞳',skin:'改善'},
+      obs:'バイタル徐々に改善。ETCO2波形安定。病院にカテーテル室準備を要請済み。',
+      vitals:{bp:'96/62',hr:'88(SR)',spo2:'97%',rr:'BVM+自発12回',bg:'188',temp:'36.1',etco2:'38'},
+      rhythm:'洞調律（SR）',st:'ST上昇（下壁）',ecgNote:'ST上昇継続。SR安定。',
+      treatment:['バイタル継続測定','ETCO2継続モニタリング','病院事前連絡（下壁梗塞・カテ室準備要請）']}
+   ],
+   tags:['#ROSC','#VF','#バイスタンダーCPR','#ST上昇','#下壁梗塞','#カテーテル'],
+   reflect:{worry:'ROSC後のST上昇を確認してから搬送先変更の判断に少し時間がかかった。もう少し迅速に決断できたかもしれない。',
+     good:'バイスタンダーとのCPR引き継ぎがスムーズで中断時間を最小化できた。ROSC後に迷わず12誘導を取ったことでST変化を検出できた。',
+     learn:'目撃ありCPAではROSC後の12誘導は必須。ST上昇があれば即座に循環器への搬送先変更を検討する。バイスタンダー教育の重要性を改めて実感した。'},
+   author:'伊藤 健太',av:'伊',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',
+   time:'3日前',daysAgo:3,likes:34,
+   comments:[
+     {name:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',time:'3日前',text:'ROSC後のST変化をその場で判断できるのが素晴らしい。12誘導の読み方を勉強したいです。'},
+     {name:'鈴木 愛',av:'鈴',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'2日前',text:'バイスタンダーの方のCPRが本当に命を救いましたね。市民講習の大切さを改めて感じます。'}
+   ],liked:true,bookmarked:true},
+
+  {id:6,type:'悩んだ症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
+   title:'非典型的胸痛・ST変化なし――女性のACSを疑い続けた判断',
+   pt:{age:'72歳',sex:'女性',place:'自宅（台所）',transport:'循環器内科（総合病院）',chief:'「母が胸が苦しいと言って座り込んでいる。顔色が悪くて冷や汗をかいている」'},
+   scene:'家事中に胸部圧迫感・強い倦怠感・左肩へのひびきが出現。発症から約40分で現着。本人は「大したことない」と言うが顔色不良・冷汗あり。',
+   pmhx:'高血圧（20年）、高脂血症（10年）、閉経後骨粗鬆症',
+   meds:'アムロジピン10mg、アトルバスタチン20mg、ビスホスホネート',allergy:'なし',
+   timepoints:[
+     {label:'初期評価時',time:'13:45',
+      findings:{consciousness:'JCS 0（清明）',breathing:'正常（16回/分）',circulation:'橈骨動脈触知良好・やや不整',pupils:'正常・対光反射あり',skin:'冷感・冷汗あり'},
+      obs:'左肩への放散痛あり。軽度の頸静脈怒張疑い。両下腿に軽度浮腫。「大したことない」と否定するが冷汗・顔色不良が気になり継続評価を決定。',
+      vitals:{bp:'148/88',hr:'92(整)',spo2:'97%',rr:'16',bg:'142',temp:'36.2',etco2:'---'},
+      rhythm:'洞調律（SR）',st:'T波平坦化',ecgNote:'V4〜V6でT波平坦化。ST上昇は明確でないがQTc軽度延長あり。',
+      treatment:['バイタル測定','12誘導ECG（1回目）','血糖測定','酸素投与（2L経鼻）']},
+     {label:'現場',time:'13:52',
+      findings:{consciousness:'JCS 0',breathing:'正常',circulation:'不整なし・触知良好',pupils:'正常',skin:'冷感・冷汗継続'},
+      obs:'症状の改善なし。T波変化の進行がないか確認のため2回目の12誘導を施行。ERか循環器か搬送先について隊内で議論。非典型的AMIの可能性を重視し循環器を選択。MC指示を仰ぐ。',
+      vitals:{bp:'144/86',hr:'90(整)',spo2:'97%',rr:'16',bg:'142',temp:'36.2',etco2:'---'},
+      rhythm:'洞調律（SR）',st:'T波平坦化',ecgNote:'2回目12誘導でもT波平坦化継続。明確なST上昇なし。',
+      treatment:['12誘導ECG（2回目）','MC指示（循環器内科搬送）']},
+     {label:'救急車内',time:'13:58',
+      findings:{consciousness:'JCS 0',breathing:'正常',circulation:'良好',pupils:'正常',skin:'冷感'},
+      obs:'症状に変化なし。病院への事前連絡で女性・非典型的胸痛・T波変化の情報を申し送り。後でカテーテル検査にて90%狭窄を確認。搬送先判断は正解だった。',
+      vitals:{bp:'140/84',hr:'88(整)',spo2:'98%',rr:'16',bg:'142',temp:'36.2',etco2:'---'},
+      rhythm:'洞調律（SR）',st:'T波平坦化',ecgNote:'T波変化継続。ST上昇なし。',
+      treatment:['バイタル継続測定','12誘導ECG（3回目）','病院事前連絡（非典型的ACS疑い）']}
+   ],
+   tags:['#ACS','#非典型的胸痛','#女性','#T波変化','#MC指示'],
+   reflect:{worry:'ST上昇がはっきりしない。女性の非典型的AMIを疑ったが確信が持てず、ERか循環器かで迷った。T波平坦化のみで循環器搬送は適切だったか不安だった。',
+     good:'本人が否定的でも冷汗・左肩痛・倦怠感の組み合わせを重視し、繰り返し12誘導を施行し続けた。MC指示を仰いで判断を共有できた。',
+     learn:'女性のACSは非典型的症状が多い。倦怠感・肩こり・冷汗の三徴はフラグ。T波変化のみでも循環器搬送を考慮する。後にカテーテルで90%狭窄確認。判断は正しかった。'},
+   author:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',
+   time:'4日前',daysAgo:4,likes:16,
+   comments:[
+     {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'4日前',text:'女性のAMIは本当に難しいですよね。非典型症状の勉強会をやりましょう。'},
+     {name:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'3日前',text:'T波変化のみでも循環器搬送を選んだ判断が素晴らしい。カテーテルで確認できてよかった。'}
+   ],liked:false,bookmarked:false}
+];
+
+// ===== STATE =====
+const TYPE_S={
+  '悩んだ症例':{bg:'rgba(229,62,62,.1)',c:'#fc8181',bd:'rgba(229,62,62,.3)'},
+  '迷った症例':{bg:'rgba(237,137,54,.1)',c:'#fbd38d',bd:'rgba(237,137,54,.3)'},
+  'よくできた':{bg:'rgba(72,187,120,.1)',c:'#9ae6b4',bd:'rgba(72,187,120,.3)'},
+  '学びになった':{bg:'rgba(66,153,225,.1)',c:'#90cdf4',bd:'rgba(66,153,225,.3)'},
+  'ヒヤリハット':{bg:'rgba(159,122,234,.1)',c:'#d6bcfa',bd:'rgba(159,122,234,.3)'}
+};
+const TYPE_EM={'悩んだ症例':'😓','迷った症例':'🤔','よくできた':'✅','学びになった':'📚','ヒヤリハット':'⚠️'};
+const VK=['jcs','bp','hr','spo2','rr','bg','temp'];
+const VL=['意識','血圧','脈拍','SpO2','呼吸','血糖','体温'];
+const VU=['','mmHg','bpm','%','回/分','mg/dL','°C'];
+
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://ytpdelbmsrhqzmjraljp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cGRlbGJtc3JocXptanJhbGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTk5MDIsImV4cCI6MjA5MDI3NTkwMn0.HGYuB79VrZvKI7j7FVb_umKEW9rt92RNbbEtOvSSjXs';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let curFilter='all',curSort='new',curQ='';
+let likeSt={},bkmSt={};
+let currentUser=null; // Supabase userオブジェクト
+let currentProfile=null; // profilesテーブルのレコード
+let isAnon=false,vitalCount=2;
+let prevPage='timeline';
+
+// ===== AUTH HELPERS =====
+function setLoading(btnId, spinnerId, txtId, loading){
+  const btn=document.getElementById(btnId);
+  const sp=document.getElementById(spinnerId);
+  const tx=document.getElementById(txtId);
+  if(!btn) return;
+  btn.disabled=loading;
+  if(sp) sp.style.display=loading?'block':'none';
+  if(tx) tx.style.display=loading?'none':'inline';
+}
+function showAuthErr(id, msg){ const e=document.getElementById(id); if(e){e.textContent=msg;e.style.display='block';} }
+function hideAuthErr(id){ const e=document.getElementById(id); if(e) e.style.display='none'; }
+
+function switchAuthTab(tab){
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-signup').style.display = tab==='signup'?'block':'none';
+  document.getElementById('form-reset').style.display = tab==='reset'?'block':'none';
+  document.getElementById('tab-login').classList.toggle('on', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('on', tab==='signup');
+  ['login-err','signup-err','reset-err'].forEach(hideAuthErr);
+  document.getElementById('signup-success').style.display='none';
+  document.getElementById('reset-success').style.display='none';
+}
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  hideAuthErr('login-err');
+  if(!email||!pass){showAuthErr('login-err','メールアドレスとパスワードを入力してください');return;}
+  setLoading('login-btn','login-spinner','login-btn-txt',true);
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  setLoading('login-btn','login-spinner','login-btn-txt',false);
+  if(error) showAuthErr('login-err', error.message.includes('Invalid')?'メールアドレスまたはパスワードが違います':error.message);
+}
+
+async function doSignup(){
+  const email=document.getElementById('signup-email').value.trim();
+  const pass=document.getElementById('signup-pass').value;
+  const nick=document.getElementById('signup-nick').value.trim();
+  hideAuthErr('signup-err');
+  if(!email||!pass){showAuthErr('signup-err','必須項目を入力してください');return;}
+  if(pass.length<6){showAuthErr('signup-err','パスワードは6文字以上にしてください');return;}
+  setLoading('signup-btn','signup-spinner','signup-btn-txt',true);
+  const {data,error}=await sb.auth.signUp({
+    email, password:pass,
+    options:{data:{nickname:nick||email.split('@')[0]}}
+  });
+  setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
+  if(error){showAuthErr('signup-err',error.message);return;}
+  // ニックネームをprofilesに保存（トリガーで自動生成されるが上書き）
+  if(data.user && nick){
+    await sb.from('profiles').upsert({id:data.user.id, nickname:nick});
+  }
+  document.getElementById('signup-success').style.display='block';
+}
+
+async function doReset(){
+  const email=document.getElementById('reset-email').value.trim();
+  hideAuthErr('reset-err');
+  if(!email){showAuthErr('reset-err','メールアドレスを入力してください');return;}
+  setLoading('reset-btn','reset-spinner','reset-btn-txt',true);
+  const {error}=await sb.auth.resetPasswordForEmail(email);
+  setLoading('reset-btn','reset-spinner','reset-btn-txt',false);
+  if(error){showAuthErr('reset-err',error.message);return;}
+  document.getElementById('reset-success').style.display='block';
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null; currentProfile=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('scr-login').classList.add('active');
+  switchAuthTab('login');
+}
+
+async function onAuthChange(user){
+  if(user){
+    currentUser=user;
+    // プロフィール取得
+    const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    currentProfile=data;
+    const nick=data?.nickname||user.email.split('@')[0];
+    document.getElementById('hdr-user').textContent=nick;
+    const postNick=document.getElementById('post-nick-disp');
+    if(postNick) postNick.textContent=nick;
+    const postAv=document.getElementById('post-av');
+    if(postAv) postAv.textContent=nick.slice(0,2)||'?';
+    document.getElementById('scr-login').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+    renderFeed();
+  }
+}
+
+// 認証状態の監視
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
+    onAuthChange(session.user);
+  } else if(event==='SIGNED_OUT'){
+    currentUser=null; currentProfile=null;
+  }
+});
+
+// エンターキー対応
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  const fl=document.getElementById('form-login');
+  const fs=document.getElementById('form-signup');
+  const fr=document.getElementById('form-reset');
+  if(fl&&fl.style.display!=='none') doLogin();
+  else if(fs&&fs.style.display!=='none') doSignup();
+  else if(fr&&fr.style.display!=='none') doReset();
+});
+
+// ===== PAGE NAV =====
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+  if(name==='mypage') updateMyPage();
+  prevPage=name;
+}
+
+function showDetail(id){
+  buildDetail(id);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+}
+
+function backToTimeline(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-timeline').classList.add('active');
+  document.querySelectorAll('.ntab').forEach((t,i)=>{if(i===0)t.classList.add('on');else t.classList.remove('on');});
+}
+
+// ===== ALERT CLASS =====
+function ac(key,val){
+  if(!val||val==='---'||val==='未測定'||val==='0'||/不可|VF|PEA|なし/.test(val)) return 'al';
+  if(key==='bp'){const s=parseInt(val);if(!isNaN(s)&&s<90) return 'al';if(!isNaN(s)&&s<100) return 'wn';}
+  if(key==='spo2'){const v=parseInt(val);if(!isNaN(v)&&v<93) return 'al';if(!isNaN(v)&&v<96) return 'wn';}
+  if(key==='hr'){const v=parseInt(val);if(!isNaN(v)&&(v>130||v<50)) return 'al';if(!isNaN(v)&&(v>110||v<55)) return 'wn';}
+  return '';
+}
+
+// ===== FEED =====
+function getFiltered(){
+  let arr=[...CASES];
+  if(curFilter!=='all') arr=arr.filter(c=>c.type===curFilter||c.cat===curFilter);
+  if(curQ){arr=arr.filter(c=>c.title.includes(curQ)||c.pt.chief.includes(curQ)||c.tags.some(t=>t.includes(curQ))||c.reflect.learn.includes(curQ)||c.pmhx.includes(curQ));}
+  if(curSort==='like') arr.sort((a,b)=>(likeSt[b.id]??b.likes)-(likeSt[a.id]??a.likes));
+  else if(curSort==='cmt') arr.sort((a,b)=>b.comments.length-a.comments.length);
+  else arr.sort((a,b)=>a.daysAgo-b.daysAgo);
+  return arr;
+}
+
+function renderFeed(){
+  const arr=getFiltered();
+  document.getElementById('cnt-lbl').textContent=arr.length+'件表示中';
+  document.getElementById('st-total').textContent=CASES.length;
+  const feed=document.getElementById('feed');
+  if(!arr.length){feed.innerHTML='<div class="empty-feed">該当する症例がありません</div>';return;}
+  feed.innerHTML=arr.map(c=>{
+    const ts=TYPE_S[c.type]||{bg:'rgba(128,128,128,.1)',c:'#888',bd:'rgba(128,128,128,.3)'};
+    const em=TYPE_EM[c.type]||'📋';
+    const likes=likeSt[c.id]!=null?likeSt[c.id]:c.likes;
+    const liked=likeSt[c.id+'l']!=null?likeSt[c.id+'l']:c.liked;
+    const bkm=bkmSt[c.id]!=null?bkmSt[c.id]:c.bookmarked;
+    const v0=c.timepoints?c.timepoints[0].vitals:{};
+    const vstrip=[['bp','血圧','mmHg'],['hr','脈拍','bpm'],['spo2','SpO2','%'],['rr','呼吸','回/分'],['bg','血糖','mg/dL']].map(([k,l,u])=>
+      v0[k]&&v0[k]!=='---'?`<div class="vi"><div class="vi-t">${l}</div><span class="vi-v ${ac(k,v0[k])}">${v0[k]}</span><span class="vi-u">${u}</span></div>`:''
+    ).join('');
+    return `<div class="lcard" style="--cc:${c.cc}" id="lc-${c.id}">
+      <div class="lcard-top">
+        <div class="lbadges">
+          <span class="tbdg" style="--tbb:${ts.bg};--tbc:${ts.c};--tbbd:${ts.bd}">${em} ${c.type}</span>
+          <span class="cbdg" style="background:rgba(${c.cr},.12);color:${c.cc};border:1px solid rgba(${c.cr},.28)">${c.cat}</span>
+        </div>
+        <span class="ltime">${c.time}</span>
+      </div>
+      <div class="lcard-mid" onclick="showDetail(${c.id})">
+        <div class="lcard-title">${c.title}</div>
+        <div class="pt-row">
+          <span class="pt-item">🧑 ${c.pt.age}・${c.pt.sex}</span>
+          <span class="pt-item">📍 ${c.pt.place}</span>
+          <span class="pt-item">🚨 ${c.pt.chief}</span>
+        </div>
+        <div class="vstrip">${vstrip}</div>
+        <div class="ltags">${c.tags.slice(0,4).map(t=>`<span class="ltag${/ROSC|VF|ヒヤリ|PEA/.test(t)?' hl':''}">${t}</span>`).join('')}</div>
+        <div class="expand-hint">▼ タップして詳細（既往歴・所見・バイタル推移・ECG・振り返り）</div>
+      </div>
+      <div class="card-foot">
+        <div class="av-row"><div class="av" style="background:${c.avBg};color:${c.avC}">${c.av}</div><span class="av-name">${c.author}</span></div>
+        <div class="reacts">
+          <button class="rbtn${liked?' liked':''}" onclick="toggleLike(${c.id})">❤️ <span id="lk-${c.id}">${likes}</span></button>
+          <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments.length}</button>
+          <button class="rbtn${bkm?' bkm':''}" onclick="toggleBkm(${c.id})">🔖</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('.fp').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  renderFeed();
+}
+function setSort(s,el){
+  curSort=s;
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  renderFeed();
+}
+function doSearch(q){curQ=q;renderFeed();}
+function toggleLike(id){
+  const c=CASES.find(x=>x.id===id);
+  const was=likeSt[id+'l']!=null?likeSt[id+'l']:c.liked;
+  likeSt[id+'l']=!was;
+  likeSt[id]=(likeSt[id]??c.likes)+(was?-1:1);
+  document.querySelectorAll(`#lc-${id} .rbtn`)[0]?.classList.toggle('liked',!was);
+  const el=document.getElementById('lk-'+id);if(el)el.textContent=likeSt[id];
+}
+function toggleBkm(id){
+  const c=CASES.find(x=>x.id===id);
+  const was=bkmSt[id]!=null?bkmSt[id]:c.bookmarked;
+  bkmSt[id]=!was;
+  document.querySelectorAll(`#lc-${id} .rbtn`)[2]?.classList.toggle('bkm',!was);
+}
+
+// ===== DETAIL =====
+function buildDetail(id){
+  const c=CASES.find(x=>x.id===id);if(!c)return;
+  document.getElementById('det-hdr-title').textContent=c.title;
+  const ts=TYPE_S[c.type]||{bg:'rgba(128,128,128,.1)',c:'#888',bd:'rgba(128,128,128,.3)'};
+  const em=TYPE_EM[c.type]||'📋';
+
+  const fclass=v=>{
+    if(!v) return '';
+    if(/300|消失|なし|不可|VF|PEA/.test(v)) return 'al';
+    if(/散大/.test(v)) return 'al';
+    if(/蒼白|冷感|冷汗|弱|不整|促迫|頻呼吸/.test(v)) return 'wn';
+    return '';
+  };
+
+  const tpHTML=c.timepoints.map((tp,i)=>{
+    const fn=tp.findings;
+    const vt=tp.vitals;
+    const acV=(k,v)=>{
+      if(!v||v==='---'||v==='未測定'||/不可|VF|PEA|なし/.test(v)) return 'al';
+      if(k==='bp'){const s=parseInt(v);if(!isNaN(s)&&s<90)return 'al';if(!isNaN(s)&&s<100)return 'wn';}
+      if(k==='spo2'){const s=parseInt(v);if(!isNaN(s)&&s<93)return 'al';if(!isNaN(s)&&s<96)return 'wn';}
+      if(k==='hr'){const s=parseInt(v);if(!isNaN(s)&&(s>130||s<50))return 'al';if(!isNaN(s)&&(s>110||s<55))return 'wn';}
+      return '';
+    };
+    return `
+    <div style="background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:14px;overflow:hidden">
+      <div style="background:var(--inp);border-bottom:1px solid var(--bd);padding:10px 16px;display:flex;align-items:center;gap:10px">
+        <div style="background:var(--acc);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.04em">${i+1}</div>
+        <div style="font-size:14px;font-weight:500;color:var(--tp);flex:1">${tp.label}</div>
+        ${tp.time?`<div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ts)">${tp.time}</div>`:''}
+      </div>
+      <div style="padding:14px 16px">
+
+        <div class="tp-sub" style="--sub-c:#9f7aea;margin-top:0">身体所見</div>
+        <div class="findings-grid">
+          <div class="find-item"><div class="find-lbl">意識レベル</div><div class="find-val ${fclass(fn.consciousness)}">${fn.consciousness||'---'}</div></div>
+          <div class="find-item"><div class="find-lbl">呼吸</div><div class="find-val ${fclass(fn.breathing)}">${fn.breathing||'---'}</div></div>
+          <div class="find-item"><div class="find-lbl">循環（脈拍）</div><div class="find-val ${fclass(fn.circulation)}">${fn.circulation||'---'}</div></div>
+          <div class="find-item"><div class="find-lbl">瞳孔</div><div class="find-val ${fclass(fn.pupils)}">${fn.pupils||'---'}</div></div>
+          <div class="find-item"><div class="find-lbl">皮膚</div><div class="find-val ${fclass(fn.skin)}">${fn.skin||'---'}</div></div>
+        </div>
+        ${tp.obs?`<div style="margin-top:10px;background:var(--inp);border:1px solid var(--bd);border-radius:6px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--tm);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">観察所見</div>
+          <div style="font-size:13px;color:var(--ts);line-height:1.7">${tp.obs}</div>
+        </div>`:''}
+
+        <div class="tp-sub" style="--sub-c:#4299e1">バイタルサイン</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${[['bp','血圧','mmHg'],['hr','脈拍','bpm'],['spo2','SpO2','%'],['rr','呼吸数','回/分'],['bg','血糖','mg/dL'],['temp','体温','°C'],['etco2','ETCO2','mmHg']].map(([k,l,u])=>
+            vt[k]&&vt[k]!=='---'?`<div style="background:var(--inp);border:1px solid var(--bd);border-radius:5px;padding:5px 9px">
+              <div style="font-size:9px;color:var(--tm);letter-spacing:.04em;margin-bottom:2px">${l}</div>
+              <span style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace" class="${acV(k,vt[k])}">${vt[k]}</span>
+              <span style="font-size:9px;color:var(--tm)"> ${u}</span>
+            </div>`:''
+          ).join('')}
+        </div>
+
+        <div class="tp-sub" style="--sub-c:var(--acc)">ECG所見</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          ${tp.rhythm?`<span class="det-tag">${tp.rhythm}</span>`:''}
+          ${tp.st?`<span class="det-tag ${/ST上昇|ST低下|T波/.test(tp.st)?'hl':''}">${tp.st}</span>`:''}
+        </div>
+        ${tp.ecgNote?`<div style="font-size:13px;color:var(--ts);line-height:1.7">${tp.ecgNote}</div>`:''}
+
+        <div class="tp-sub" style="--sub-c:#48bb78">実施処置</div>
+        <div>${(tp.treatment||[]).map(t=>`<span class="det-tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const cmts=c.comments.map(cm=>`<div class="comment-item">
+    <div class="c-av" style="background:${cm.avBg};color:${cm.avC}">${cm.av}</div>
+    <div><div class="c-meta">${cm.name}<span class="c-time-sm">${cm.time}</span></div><div class="c-text">${cm.text}</div></div>
+  </div>`).join('');
+
+  document.getElementById('det-body').innerHTML=`
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="tbdg" style="--tbb:${ts.bg};--tbc:${ts.c};--tbbd:${ts.bd}">${em} ${c.type}</span>
+    <span class="cbdg" style="background:rgba(${c.cr},.12);color:${c.cc};border:1px solid rgba(${c.cr},.28);padding:3px 9px;border-radius:20px;font-size:11px">${c.cat}</span>
+    <span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ ${likeSt[c.id]??c.likes}　💬 ${c.comments.length}</span>
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">患者情報・現場概要</div></div>
+    <div class="info-full"><div class="ib-lbl">通報内容</div><div class="ib-val" style="font-weight:500">${c.pt.chief}</div></div>
+    <div class="info-grid" style="margin-bottom:10px">
+      <div class="info-block"><div class="ib-lbl">年齢・性別</div><div class="ib-val">${c.pt.age}・${c.pt.sex}</div></div>
+      <div class="info-block"><div class="ib-lbl">発生場所</div><div class="ib-val">${c.pt.place}</div></div>
+      <div class="info-block" style="grid-column:1/-1"><div class="ib-lbl">搬送先</div><div class="ib-val">${c.pt.transport}</div></div>
+    </div>
+    <div class="info-full"><div class="ib-lbl">現場状況・受傷機転（詳細）</div><div class="ib-val" style="line-height:1.7">${c.scene}</div></div>
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">既往歴・内服薬・アレルギー</div></div>
+    <div class="info-grid">
+      <div class="info-block"><div class="ib-lbl">既往歴</div><div class="ib-val" style="line-height:1.7">${c.pmhx}</div></div>
+      <div class="info-block"><div class="ib-lbl">内服薬</div><div class="ib-val" style="line-height:1.7">${c.meds}</div></div>
+      <div class="info-block"><div class="ib-lbl">アレルギー</div><div class="ib-val">${c.allergy}</div></div>
+    </div>
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:#9f7aea"></div><div class="sec-title-sm">時系列記録（所見・バイタル・ECG・処置）</div></div>
+    ${tpHTML}
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">タグ</div></div>
+    <div>${c.tags.map(t=>`<span class="det-tag ${/ROSC|VF|ヒヤリ|PEA/.test(t)?'hl':''}">${t}</span>`).join('')}</div>
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">振り返り</div></div>
+    <div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:var(--acc)"></div><div class="rb-lbl">迷った点・悩んだこと</div></div><div class="rb-body">${c.reflect.worry}</div></div>
+    <div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:#48bb78"></div><div class="rb-lbl">よかった点・工夫したこと</div></div><div class="rb-body">${c.reflect.good}</div></div>
+    <div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:#4299e1"></div><div class="rb-lbl">次回への学び</div></div><div class="rb-body">${c.reflect.learn}</div></div>
+  </div>
+
+  <div class="det-sec">
+    <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">コメント（${c.comments.length}件）</div></div>
+    <div class="comment-box">
+      ${cmts}
+      <div class="c-input-row">
+        <input class="c-inp" id="c-inp-${c.id}" placeholder="コメントを入力..."/>
+        <button class="c-send" onclick="postCmt(${c.id})">送信</button>
+      </div>
+    </div>
+  </div>
+  <div style="height:30px"></div>`;
+}
+
+function postCmt(id){
+  const inp=document.getElementById('c-inp-'+id);
+  if(!inp||!inp.value.trim())return;
+  showToast('コメントを送信しました');
+  inp.value='';
+}
+
+// ===== POST FORM =====
+function updateAv(){
+  const val=document.getElementById('post-nick').value.trim();
+  document.getElementById('post-av').textContent=val.slice(0,2)||'?';
+}
+function toggleAnon(){
+  isAnon=!isAnon;
+  const tog=document.getElementById('anon-tog');
+  tog.classList.toggle('on',isAnon);
+  const inp=document.getElementById('post-nick');
+  inp.disabled=isAnon;
+  inp.style.opacity=isAnon?'0.4':'1';
+  document.getElementById('post-av').textContent=isAnon?'匿':(inp.value.slice(0,2)||'?');
+}
+function selCat(el){
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function selType(el){
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+}
+// ===== TIMEPOINT CARDS =====
+const TP_PRESETS=[
+  {label:'初期評価時',time:''},
+  {label:'現場',time:''},
+  {label:'救急車内',time:''},
+  {label:'病院到着前',time:''},
+  {label:'追加記録',time:''},
+];
+const TREATMENT_LIST=[
+  'BLS（CPR）','AED','気管挿管','ラリンゲアルマスク','BVM換気',
+  '静脈路確保','薬剤投与（Adr）','薬剤投与（その他）',
+  '12誘導ECG','カプノグラフィー','血糖測定','酸素投与',
+  '頸椎固定','バックボード','骨盤ベルト','止血処置',
+  'CPAP','分娩介助','MC指示','体位管理'
+];
+const RHYTHM_LIST=['洞調律（SR）','心房細動（AF）','心房粗動','VF','VT','PEA','心静止','完全AVブロック','洞性頻脈','洞性徐脈','その他'];
+const ST_LIST=['変化なし','ST上昇（下壁）','ST上昇（前壁）','ST上昇（側壁）','ST低下','T波平坦化','T波陰転','評価困難'];
+
+let tpCount=0;
+
+function buildTimepointCard(idx){
+  const preset=TP_PRESETS[Math.min(idx,TP_PRESETS.length-1)];
+  const id=`tp-${Date.now()}-${idx}`;
+  const div=document.createElement('div');
+  div.className='tp-card';
+  div.id=id;
+  div.dataset.draggable='true';
+  div.innerHTML=`
+  <div class="tp-card-hdr">
+    <div class="tp-drag-handle" title="ドラッグして並び替え">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="tp-badge">${idx+1}</div>
+    <input class="tp-label-inp" placeholder="タイムポイント名" value="${preset.label}"/>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:11px;color:var(--tm)">時刻</span>
+      <input type="time" class="tp-time-inp" value="${preset.time}"/>
+    </div>
+    <button class="tp-del" onclick="removeTP('${id}')" title="削除">✕</button>
+  </div>
+  <div class="tp-body">
+
+    <div class="tp-sub" style="--sub-c:#9f7aea;margin-top:0">身体所見</div>
+    <div class="tp-findings-grid">
+      <div class="tp-find-item"><div class="tp-find-lbl">意識レベル（JCS/GCS）</div><input class="tp-find-inp" placeholder="例：JCS 300 / GCS E1V1M1"/></div>
+      <div class="tp-find-item"><div class="tp-find-lbl">瞳孔</div><input class="tp-find-inp" placeholder="例：散大・対光反射なし"/></div>
+      <div class="tp-find-item"><div class="tp-find-lbl">呼吸</div><input class="tp-find-inp" placeholder="例：自発呼吸なし / 頻呼吸"/></div>
+      <div class="tp-find-item"><div class="tp-find-lbl">呼吸音</div><input class="tp-find-inp" placeholder="例：両側清明 / 右側減弱"/></div>
+      <div class="tp-find-item"><div class="tp-find-lbl">循環（脈拍触知）</div><input class="tp-find-inp" placeholder="例：頸動脈触知なし / 橈骨動脈弱い"/></div>
+      <div class="tp-find-item"><div class="tp-find-lbl">皮膚色・温感</div><input class="tp-find-inp" placeholder="例：蒼白・冷感・冷汗あり"/></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="tp-find-lbl">観察所見</div>
+      <textarea class="tp-note-inp" style="min-height:90px" placeholder="例：頸静脈怒張あり、両下腿に浮腫、腹部圧痛・筋性防御あり、四肢末梢冷感、項部硬直なし など"></textarea>
+    </div>
+
+    <div class="tp-sub" style="--sub-c:#4299e1">バイタルサイン</div>
+    <div class="vital-grid">
+      <div><div class="vital-item-lbl">血圧</div><input class="vital-inp" placeholder="120/80"/><div class="vital-unit">mmHg</div></div>
+      <div><div class="vital-item-lbl">脈拍</div><input class="vital-inp" placeholder="80"/><div class="vital-unit">回/分</div></div>
+      <div><div class="vital-item-lbl">SpO2</div><input class="vital-inp" placeholder="98"/><div class="vital-unit">%</div></div>
+      <div><div class="vital-item-lbl">呼吸数</div><input class="vital-inp" placeholder="16"/><div class="vital-unit">回/分</div></div>
+      <div><div class="vital-item-lbl">体温</div><input class="vital-inp" placeholder="36.8"/><div class="vital-unit">°C</div></div>
+      <div><div class="vital-item-lbl">血糖</div><input class="vital-inp" placeholder="105"/><div class="vital-unit">mg/dL</div></div>
+      <div><div class="vital-item-lbl">ETCO2</div><input class="vital-inp" placeholder="35"/><div class="vital-unit">mmHg</div></div>
+      <div><div class="vital-item-lbl">体重（小児）</div><input class="vital-inp" placeholder="---"/><div class="vital-unit">kg</div></div>
+    </div>
+
+    <div class="tp-sub" style="--sub-c:var(--acc)">ECG所見</div>
+    <div class="tp-ecg-row">
+      <div class="tp-find-item"><div class="tp-find-lbl">心調律</div>
+        <select class="tp-find-inp" style="cursor:pointer">
+          <option value="">選択...</option>
+          ${RHYTHM_LIST.map(r=>`<option>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="tp-find-item"><div class="tp-find-lbl">ST変化</div>
+        <select class="tp-find-inp" style="cursor:pointer">
+          <option value="">選択...</option>
+          ${ST_LIST.map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <textarea class="tp-note-inp" placeholder="ECG所見・12誘導の詳細メモ（例：VFを確認→除細動後SR復帰、II・III・aVFにST上昇）"></textarea>
+
+    <div class="tp-sub" style="--sub-c:#48bb78">実施処置</div>
+    <div class="tp-chips">
+      ${TREATMENT_LIST.map(t=>`<div class="tp-chip" onclick="this.classList.toggle('on')">${t}</div>`).join('')}
+    </div>
+    <textarea class="tp-note-inp" style="margin-top:10px" placeholder="処置の詳細・特定行為メモ（例：気管挿管2回目成功、アドレナリン1mg静注）"></textarea>
+
+  </div>`;
+
+  initDrag(div);
+  return div;
+}
+
+function addTimepoint(){
+  const container=document.getElementById('tp-cards');
+  container.appendChild(buildTimepointCard(tpCount));
+  tpCount++;
+  renumberTP();
+}
+
+function removeTP(id){
+  const el=document.getElementById(id);
+  if(el) el.remove();
+  renumberTP();
+}
+
+function renumberTP(){
+  document.querySelectorAll('.tp-card').forEach((card,i)=>{
+    const badge=card.querySelector('.tp-badge');
+    if(badge) badge.textContent=i+1;
+  });
+}
+
+// ===== DRAG & DROP =====
+function initDrag(card){
+  const handle=card.querySelector('.tp-drag-handle');
+  if(!handle) return;
+
+  function startDrag(clientY){
+    const container=document.getElementById('tp-cards');
+
+    // カード自身は半透明のままDOMに残す（fixed移動しない）
+    card.classList.add('dragging');
+
+    // 追従するゴースト（視覚用クローン）
+    const rect=card.getBoundingClientRect();
+    const ghost=card.cloneNode(true);
+    ghost.style.cssText=`position:fixed;z-index:999;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;margin:0;pointer-events:none;opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.5)`;
+    document.body.appendChild(ghost);
+
+    const startY=clientY;
+    const startTop=rect.top;
+
+    function getClientY(e){ return e.touches ? e.touches[0].clientY : e.clientY; }
+
+    function onMove(e){
+      if(e.cancelable) e.preventDefault();
+      const cy=getClientY(e);
+      ghost.style.top=(startTop+(cy-startY))+'px';
+
+      // ドラッグ中カードの位置を判定して並び替え
+      const siblings=[...container.querySelectorAll('.tp-card:not(.dragging)')];
+      let ref=null;
+      for(const s of siblings){
+        const r=s.getBoundingClientRect();
+        if(cy < r.top+r.height/2){ ref=s; break; }
+      }
+      // refがnullなら末尾、あれば直前に移動
+      if(ref){
+        container.insertBefore(card, ref);
+      } else {
+        container.appendChild(card);
+      }
+    }
+
+    function onEnd(){
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      ghost.remove();
+      card.classList.remove('dragging');
+      renumberTP();
+    }
+
+    document.addEventListener('mousemove', onMove, {passive:false});
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onEnd);
+  }
+
+  handle.addEventListener('mousedown', e=>{ e.preventDefault(); startDrag(e.clientY); });
+  handle.addEventListener('touchstart', e=>{ e.preventDefault(); startDrag(e.touches[0].clientY); }, {passive:false});
+}
+
+function calcChars(){
+  let n=0;
+  document.querySelectorAll('.post-wrap textarea,.post-wrap input[type="text"],.post-wrap .tp-find-inp,.post-wrap .tp-note-inp,.post-wrap .vital-inp,.form-input,.form-textarea').forEach(el=>{
+    if(el.value) n+=el.value.length;
+  });
+  document.getElementById('char-cnt').textContent=n+'文字';
+}
+function submitCase(){
+  showToast('症例を投稿しました ✓');
+  setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),1500);
+}
+
+// ===== MYPAGE =====
+async function updateMyPage(){
+  if(!currentUser) return;
+  const profile=currentProfile;
+  const nick=profile?.nickname||currentUser.email.split('@')[0];
+  const initials=nick.slice(0,2)||'?';
+  const el1=document.getElementById('my-av-big');
+  const el2=document.getElementById('my-name-disp');
+  const el3=document.getElementById('my-email-disp');
+  const nickInp=document.getElementById('my-nick-inp');
+  if(el1) el1.textContent=initials;
+  if(el2) el2.textContent=nick;
+  if(el3) el3.textContent=currentUser.email;
+  if(nickInp) nickInp.value=nick;
+
+  // 自分の投稿をSupabaseから取得（未接続時はサンプルデータにフォールバック）
+  const mp=document.getElementById('my-posts');
+  if(!mp) return;
+  try {
+    const {data,error}=await sb.from('cases')
+      .select('id,title,type,cat,created_at')
+      .eq('user_id',currentUser.id)
+      .order('created_at',{ascending:false});
+    if(error) throw error;
+    if(data&&data.length>0){
+      document.getElementById('my-stat-posts').textContent=data.length;
+      mp.innerHTML=data.map(c=>`<div class="my-post-item" onclick="showDetail(${c.id})">
+        <div class="my-post-title">${c.title}</div>
+        <div class="my-post-meta">
+          <span>${TYPE_EM[c.type]||''} ${c.type}</span>
+          <span>${c.cat}</span>
+          <span>${new Date(c.created_at).toLocaleDateString('ja-JP')}</span>
+        </div>
+      </div>`).join('');
+    } else {
+      mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">まだ投稿がありません</div>';
+    }
+  } catch(e) {
+    // Supabase未設定時はサンプルで代替
+    const myC=CASES.filter(c=>c.author);
+    document.getElementById('my-stat-posts').textContent=myC.length;
+    mp.innerHTML=myC.map(c=>`<div class="my-post-item" onclick="showDetail(${c.id})">
+      <div class="my-post-title">${c.title}</div>
+      <div class="my-post-meta">
+        <span>${TYPE_EM[c.type]||''} ${c.type}</span>
+        <span>${c.cat}</span>
+        <span>${c.time}</span>
+      </div>
+    </div>`).join('');
+  }
+}
+
+async function saveNickname(){
+  if(!currentUser) return;
+  const nick=document.getElementById('my-nick-inp').value.trim();
+  if(!nick) return;
+  const {error}=await sb.from('profiles').upsert({id:currentUser.id,nickname:nick});
+  if(!error){
+    currentProfile={...currentProfile,nickname:nick};
+    document.getElementById('my-av-big').textContent=nick.slice(0,2);
+    document.getElementById('my-name-disp').textContent=nick;
+    document.getElementById('hdr-user').textContent=nick;
+    showToast('ニックネームを保存しました');
+  }
+}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ===== INIT =====
+async function appInit(){
+  // 初期タイムポイント3枚を生成
+  const container=document.getElementById('tp-cards');
+  if(container){
+    container.appendChild(buildTimepointCard(0)); tpCount++;
+    container.appendChild(buildTimepointCard(1)); tpCount++;
+    container.appendChild(buildTimepointCard(2)); tpCount++;
+  }
+  // Supabase SDK未ロード時のフォールバック
+  if(!window.supabase){
+    console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
+    renderFeed();
+    return;
+  }
+  // セッション復元（ページリロード時に自動ログイン）
+  try {
+    const {data:{session}}=await sb.auth.getSession();
+    if(session) await onAuthChange(session.user);
+    else renderFeed();
+  } catch(e) {
+    console.warn('セッション取得失敗:', e.message);
+    renderFeed();
+  }
+}
+
+// DOMContentLoaded後に初期化（SDKが確実にロードされてから）
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', appInit);
+} else {
+  appInit();
+}
+</script>
+</body>
+</html>
