@@ -1026,7 +1026,7 @@ async function onAuthChange(user){
     if(postAv) postAv.textContent=nick.slice(0,2)||'?';
     document.getElementById('scr-login').classList.remove('active');
     document.getElementById('app').classList.add('active');
-    renderFeed();
+    fetchAndRenderFeed();
   }
 }
 
@@ -1118,10 +1118,70 @@ function ac(key,val){
 }
 
 // ===== FEED =====
+
+// Supabaseから症例一覧を取得してCASES配列を更新→描画
+async function fetchAndRenderFeed(){
+  try {
+    const {data,error}=await sb.from('cases')
+      .select('*, profiles(nickname, av_color, av_bg)')
+      .order('created_at',{ascending:false})
+      .limit(100);
+    if(error) throw error;
+    if(data && data.length>0){
+      const CAT_META={
+        'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
+        '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
+        '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
+        '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
+        'その他':{cc:'#9f7aea',cr:'159,122,234'},
+      };
+      // DB取得データをCASES配列の形式に変換（サンプルと混在させず上書き）
+      const dbCases = data.map(d=>{
+        const m=CAT_META[d.cat]||{cc:'#888',cr:'128,128,128'};
+        const nick=d.profiles?.nickname||'不明';
+        return {
+          ...d,
+          cc:m.cc, cr:m.cr,
+          pt:{age:'',sex:'',place:'',transport:'',chief:d.chief||''},
+          reflect:{
+            worry:d.reflect_worry||'',
+            good: d.reflect_good||'',
+            learn:d.reflect_learn||'',
+          },
+          author: nick,
+          av: nick.slice(0,2),
+          avBg: d.profiles?.av_bg||'rgba(136,136,136,.2)',
+          avC:  d.profiles?.av_color||'#888',
+          likes: 0,
+          comments:[],
+          liked:false, bookmarked:false,
+          timepoints: d.timepoints||[],
+          tags: d.tags||[],
+        };
+      });
+      // サンプルデータを残しつつDBデータを先頭に
+      // ※Supabase接続後はDBデータのみ表示したい場合は下行を CASES.splice(0) にする
+      CASES.splice(0, CASES.length, ...dbCases);
+    }
+  } catch(e){
+    console.warn('Supabase取得失敗、サンプルデータを表示:', e.message);
+  }
+  renderFeed();
+}
+
 function getFiltered(){
   let arr=[...CASES];
   if(curFilter!=='all') arr=arr.filter(c=>c.type===curFilter||c.cat===curFilter);
-  if(curQ){arr=arr.filter(c=>c.title.includes(curQ)||c.pt.chief.includes(curQ)||c.tags.some(t=>t.includes(curQ))||c.reflect.learn.includes(curQ)||c.pmhx.includes(curQ));}
+  if(curQ){
+    const q=curQ;
+    arr=arr.filter(c=>
+      (c.title||'').includes(q)||
+      (c.chief||c.pt?.chief||'').includes(q)||
+      (c.tags||[]).some(t=>t.includes(q))||
+      (c.reflect?.learn||c.reflect_learn||'').includes(q)||
+      (c.pmhx||'').includes(q)
+    );
+  }
   if(curSort==='like') arr.sort((a,b)=>(likeSt[b.id]??b.likes)-(likeSt[a.id]??a.likes));
   else if(curSort==='cmt') arr.sort((a,b)=>b.comments.length-a.comments.length);
   else arr.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
@@ -1562,74 +1622,81 @@ function calcChars(){
 async function submitCase(){
   if(!currentUser){showToast('ログインが必要です');return;}
 
-  // 必須チェック
-  const title=document.getElementById('f-chief')?.value.trim();
-  const catEl=document.querySelector('.cat-card.on .cat-name');
-  const typeEl=document.querySelector('.type-pill.on');
-  if(!catEl){showToast('症例カテゴリを選択してください');return;}
-  if(!typeEl){showToast('症例の性質を選択してください');return;}
-  if(!title){showToast('通報内容を入力してください');return;}
+  // emoji除去ヘルパー
+  const stripEmoji = s => s.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FEFF}]/gu,'').trim();
 
-  // フォームデータ収集
-  const cat=catEl.textContent.trim();
-  const type=typeEl.textContent.trim();
-  const CAT_COLOR={
-    'CPA・蘇生':'#e53e3e','外傷・多発外傷':'#ed8936',
-    '内因性疾患':'#4299e1','小児・産科':'#48bb78','その他':'#9f7aea'
+  // 必須チェック
+  const chief = document.getElementById('f-chief')?.value.trim()||'';
+  const catEl  = document.querySelector('.cat-card.on .cat-name');
+  const typeEl = document.querySelector('.type-pill.on');
+  if(!catEl)  {showToast('症例カテゴリを選択してください');return;}
+  if(!typeEl) {showToast('症例の性質を選択してください');return;}
+  if(!chief)  {showToast('通報内容を入力してください');return;}
+
+  const cat  = catEl.textContent.trim();        // 例: CPA・蘇生
+  const type = stripEmoji(typeEl.textContent);  // emoji除去: 悩んだ症例
+
+  // 患者情報からタイトルを自動生成
+  const age    = document.getElementById('f-age')?.value||'';
+  const ageU   = document.getElementById('f-age-unit')?.value||'歳';
+  const sex    = document.getElementById('f-sex')?.value||'';
+  const place  = document.getElementById('f-place')?.value||'';
+  const agePart  = age ? `${age}${ageU}` : '';
+  const sexPart  = sex && sex!=='選択...' ? `・${sex}` : '';
+  const placePart= place && place!=='選択...' ? `・${place}` : '';
+  const autoTitle= `【${type}】${agePart}${sexPart}${placePart} ${chief}`.slice(0,80);
+
+  const CAT_META={
+    'CPA・蘇生':    {cc:'#e53e3e',cr:'229,62,62'},
+    '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
+    '内因性疾患':   {cc:'#4299e1',cr:'66,153,225'},
+    '小児・産科':   {cc:'#48bb78',cr:'72,187,120'},
+    'その他':       {cc:'#9f7aea',cr:'159,122,234'},
   };
-  const CAT_RGB={
-    'CPA・蘇生':'229,62,62','外傷・多発外傷':'237,137,54',
-    '内因性疾患':'66,153,225','小児・産科':'72,187,120','その他':'159,122,234'
-  };
+  const meta = CAT_META[cat]||{cc:'#e53e3e',cr:'229,62,62'};
 
   // タイムポイント収集
-  const tpCards=document.querySelectorAll('#tp-cards .tp-card');
-  const timepoints=Array.from(tpCards).map(card=>{
-    const inputs=card.querySelectorAll('.tp-find-inp');
-    const vitals=card.querySelectorAll('.vital-inp');
-    const notes=card.querySelectorAll('.tp-note-inp');
-    const chips=Array.from(card.querySelectorAll('.tp-chip.on')).map(c=>c.textContent.trim());
+  const tpCards = document.querySelectorAll('#tp-cards .tp-card');
+  const timepoints = Array.from(tpCards).map(card=>{
+    const fi  = card.querySelectorAll('.tp-find-inp');
+    const vi  = card.querySelectorAll('.vital-inp');
+    const ni  = card.querySelectorAll('.tp-note-inp');
+    const tx  = Array.from(card.querySelectorAll('.tp-chip.on')).map(c=>c.textContent.trim());
     return {
       label: card.querySelector('.tp-label-inp')?.value||'',
       time:  card.querySelector('.tp-time-inp')?.value||'',
       findings:{
-        consciousness: inputs[0]?.value||'',
-        breathing:     inputs[1]?.value||'',
-        breath_sounds: inputs[2]?.value||'',
-        circulation:   inputs[3]?.value||'',
-        skin:          inputs[4]?.value||'',
-        pupils:        inputs[5]?.value||'',
+        consciousness: fi[0]?.value||'', breathing:fi[1]?.value||'',
+        breath_sounds: fi[2]?.value||'', circulation:fi[3]?.value||'',
+        skin:fi[4]?.value||'',           pupils:fi[5]?.value||'',
       },
-      obs:     notes[0]?.value||'',
+      obs: ni[0]?.value||'',
       vitals:{
-        bp:    vitals[0]?.value||'---',
-        hr:    vitals[1]?.value||'---',
-        spo2:  vitals[2]?.value||'---',
-        rr:    vitals[3]?.value||'---',
-        temp:  vitals[4]?.value||'---',
-        bg:    vitals[5]?.value||'---',
-        etco2: vitals[6]?.value||'---',
+        bp:vi[0]?.value||'---',  hr:vi[1]?.value||'---',
+        spo2:vi[2]?.value||'---',rr:vi[3]?.value||'---',
+        temp:vi[4]?.value||'---',bg:vi[5]?.value||'---',
+        etco2:vi[6]?.value||'---',
       },
-      rhythm:  card.querySelectorAll('.tp-find-inp')[6]?.value||'',
-      st:      card.querySelectorAll('.tp-find-inp')[7]?.value||'',
-      ecgNote: notes[1]?.value||'',
-      treatment: chips,
-      treatmentNote: notes[2]?.value||'',
+      rhythm:fi[6]?.value||'', st:fi[7]?.value||'',
+      ecgNote:ni[1]?.value||'',
+      treatment:tx,
+      treatmentNote:ni[2]?.value||'',
     };
   });
 
   // タグ収集
-  const tags=Array.from(document.querySelectorAll('#tag-chips .tag-chip.on')).map(t=>t.textContent.trim());
+  const tags = Array.from(document.querySelectorAll('#tag-chips .tag-chip.on'))
+    .map(t=>t.textContent.trim());
 
   const caseData={
-    user_id:      currentUser.id,
-    type,cat,
-    title,
-    chief:        document.getElementById('f-chief')?.value.trim()||'',
-    scene:        document.getElementById('f-scene')?.value.trim()||'',
-    pmhx:         document.getElementById('f-pmhx')?.value.trim()||'',
-    meds:         document.getElementById('f-meds')?.value.trim()||'',
-    allergy:      document.getElementById('f-allergy')?.value.trim()||'',
+    user_id: currentUser.id,
+    type, cat,
+    title:   autoTitle,
+    chief,
+    scene:   document.getElementById('f-scene')?.value.trim()||'',
+    pmhx:    document.getElementById('f-pmhx')?.value.trim()||'',
+    meds:    document.getElementById('f-meds')?.value.trim()||'',
+    allergy: document.getElementById('f-allergy')?.value.trim()||'',
     timepoints,
     tags,
     reflect_worry: document.getElementById('f-worry')?.value.trim()||'',
@@ -1637,45 +1704,39 @@ async function submitCase(){
     reflect_learn: document.getElementById('f-learn')?.value.trim()||'',
   };
 
-  const submitBtn=document.querySelector('.submit-btn');
+  const submitBtn = document.querySelector('.submit-btn');
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='投稿中...';}
 
   try {
-    const {data,error}=await sb.from('cases').insert(caseData).select().single();
+    const {data,error} = await sb.from('cases').insert(caseData).select().single();
     if(error) throw error;
 
-    // ローカルのCASES配列にも追加してすぐ表示
-    const nick=currentProfile?.nickname||currentUser.email.split('@')[0];
-    const avC=currentProfile?.av_color||'#e53e3e';
-    const avBg=currentProfile?.av_bg||'rgba(229,62,62,.2)';
-    CASES.unshift({
-      ...data,
-      id: data.id,
-      cc: CAT_COLOR[cat]||'#e53e3e',
-      cr: CAT_RGB[cat]||'229,62,62',
-      pt:{age:'',sex:'',place:'',transport:'',chief:data.chief},
-      reflect:{worry:data.reflect_worry,good:data.reflect_good,learn:data.reflect_learn},
-      author: nick,
-      av: nick.slice(0,2),
-      avBg, avC,
-      likes: 0,
-      comments:[],
-      liked:false,bookmarked:false,
-    });
-
+    // 投稿成功 → Supabaseから最新一覧を再取得してタイムラインに反映
     showToast('症例を投稿しました ✓');
-    // フォームリセット
-    document.querySelectorAll('.cat-card.on').forEach(e=>e.classList.remove('on'));
-    document.querySelectorAll('.type-pill.on').forEach(e=>e.classList.remove('on'));
-    document.querySelectorAll('.tag-chip.on,.tp-chip.on').forEach(e=>e.classList.remove('on'));
-    document.querySelectorAll('.post-wrap textarea,.post-wrap input[type="text"]').forEach(e=>e.value='');
-    setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),1000);
-    renderFeed();
-  } catch(e) {
+    resetPostForm();
+    await fetchAndRenderFeed();
+    setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),800);
+  } catch(e){
     showToast('投稿失敗: '+e.message);
-    console.error(e);
+    console.error('submitCase error:', e);
   } finally {
     if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='症例を投稿する →';}
+  }
+}
+
+function resetPostForm(){
+  document.querySelectorAll('.cat-card.on').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.type-pill.on').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.tag-chip.on,.tp-chip.on').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('#post-wrap textarea, #post-wrap input:not([type="time"])').forEach(e=>{
+    if(e.tagName==='SELECT') e.selectedIndex=0; else e.value='';
+  });
+  // タイムポイントをリセット（3枚に戻す）
+  const tp=document.getElementById('tp-cards');
+  if(tp){ tp.innerHTML=''; tpCount=0;
+    tp.appendChild(buildTimepointCard(0));tpCount++;
+    tp.appendChild(buildTimepointCard(1));tpCount++;
+    tp.appendChild(buildTimepointCard(2));tpCount++;
   }
 }
 
@@ -1917,7 +1978,7 @@ async function appInit(){
   // Supabase SDK未ロード時のフォールバック
   if(!window.supabase){
     console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
-    renderFeed();
+    fetchAndRenderFeed();
     return;
   }
   // セッション復元（ページリロード時に自動ログイン）
@@ -1927,7 +1988,7 @@ async function appInit(){
     else renderFeed();
   } catch(e) {
     console.warn('セッション取得失敗:', e.message);
-    renderFeed();
+    fetchAndRenderFeed();
   }
 }
 
