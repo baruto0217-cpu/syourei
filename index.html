@@ -6,14 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>救急ケースノート</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" onerror="loadSupabaseFallback()"></script>
-<script>
-function loadSupabaseFallback(){
-  var s=document.createElement('script');
-  s.src='https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js';
-  document.head.appendChild(s);
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -1034,7 +1027,7 @@ async function onAuthChange(user){
     // ヘッダー表示
     const hdrUser=document.getElementById('hdr-user');
     hdrUser.innerHTML=isAdmin
-      ? `${nick} <span style="background:var(--acc);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.06em;vertical-align:middle">ADMIN</span>`
+      ? nick+' <span style="background:var(--acc);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.06em;vertical-align:middle">ADMIN</span>'
       : nick;
     const postNick=document.getElementById('post-nick-disp');
     if(postNick) postNick.textContent=nick;
@@ -1229,7 +1222,7 @@ function renderFeed(){
           <span class="pt-item">🚨 ${c.pt.chief}</span>
         </div>
         <div class="vstrip">${vstrip}</div>
-        <div class="ltags">${c.tags.slice(0,4).map(t=>`<span class="ltag${/ROSC|VF|ヒヤリ|PEA/.test(t)?' hl':''}">${t}</span>`).join('')}</div>
+        <div class="ltags">${c.tags.slice(0,4).map(t=>'<span class="ltag'+(/ROSC|VF|ヒヤリ|PEA/.test(t)?' hl':'')+'">'+t+'</span>').join('')}</div>
         <div class="expand-hint">▼ タップして詳細（既往歴・所見・バイタル推移・ECG・振り返り）</div>
       </div>
       <div class="card-foot">
@@ -1238,7 +1231,7 @@ function renderFeed(){
           <button class="rbtn${liked?' liked':''}" onclick="toggleLike(${c.id})">❤️ <span id="lk-${c.id}">${likes}</span></button>
           <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments.length}</button>
           <button class="rbtn${bkm?' bkm':''}" onclick="toggleBkm(${c.id})">🔖</button>
-          ${currentProfile?.is_admin?`<button class="rbtn" onclick="adminDeleteCase(${c.id},event)" style="color:#e53e3e" title="管理者削除">🗑</button>`:''}
+          ${currentProfile?.is_admin?'<button class="rbtn" onclick="adminDeleteCase('+c.id+',event)" style="color:#e53e3e" title="管理者削除">🗑</button>':''}
         </div>
       </div>
     </div>`;
@@ -1304,7 +1297,7 @@ function buildDetail(id){
       <div style="background:var(--inp);border-bottom:1px solid var(--bd);padding:10px 16px;display:flex;align-items:center;gap:10px">
         <div style="background:var(--acc);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.04em">${i+1}</div>
         <div style="font-size:14px;font-weight:500;color:var(--tp);flex:1">${tp.label}</div>
-        ${tp.time?`<div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ts)">${tp.time}</div>`:''}
+        ${tp.time?'<div style="font-size:12px;font-family:JetBrains Mono,monospace;color:var(--ts)">'+tp.time+'</div>':''}
       </div>
       <div style="padding:14px 16px">
 
@@ -1316,10 +1309,7 @@ function buildDetail(id){
           <div class="find-item"><div class="find-lbl">瞳孔</div><div class="find-val ${fclass(fn.pupils)}">${fn.pupils||'---'}</div></div>
           <div class="find-item"><div class="find-lbl">皮膚</div><div class="find-val ${fclass(fn.skin)}">${fn.skin||'---'}</div></div>
         </div>
-        ${tp.obs?`<div style="margin-top:10px;background:var(--inp);border:1px solid var(--bd);border-radius:6px;padding:10px 12px">
-          <div style="font-size:10px;color:var(--tm);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">観察所見</div>
-          <div style="font-size:13px;color:var(--ts);line-height:1.7">${tp.obs}</div>
-        </div>`:''}
+        ${tp.obs?'<div style="margin-top:10px;background:var(--inp);border:1px solid var(--bd);border-radius:6px;padding:10px 12px"><div style="font-size:10px;color:var(--tm);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">観察所見</div><div style="font-size:13px;color:var(--ts);line-height:1.7">'+tp.obs+'</div></div>':''}
 
         <div class="tp-sub" style="--sub-c:#4299e1">バイタルサイン</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1334,13 +1324,13 @@ function buildDetail(id){
 
         <div class="tp-sub" style="--sub-c:var(--acc)">ECG所見</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          ${tp.rhythm?`<span class="det-tag">${tp.rhythm}</span>`:''}
-          ${tp.st?`<span class="det-tag ${/ST上昇|ST低下|T波/.test(tp.st)?'hl':''}">${tp.st}</span>`:''}
+          ${tp.rhythm?'<span class="det-tag">'+tp.rhythm+'</span>':''}
+          ${tp.st?'<span class="det-tag '+(/ST上昇|ST低下|T波/.test(tp.st)?'hl':'')+'">'+tp.st+'</span>':''}
         </div>
-        ${tp.ecgNote?`<div style="font-size:13px;color:var(--ts);line-height:1.7">${tp.ecgNote}</div>`:''}
+        ${tp.ecgNote?'<div style="font-size:13px;color:var(--ts);line-height:1.7">'+tp.ecgNote+'</div>':''}
 
         <div class="tp-sub" style="--sub-c:#48bb78">実施処置</div>
-        <div>${(tp.treatment||[]).map(t=>`<span class="det-tag">${t}</span>`).join('')}</div>
+        <div>${(tp.treatment||[]).map(t=>'<span class="det-tag">'+t+'</span>').join('')}</div>
       </div>
     </div>`;
   }).join('');
@@ -1353,7 +1343,7 @@ function buildDetail(id){
   const cmts=c.comments.map((cm,ci)=>`<div class="comment-item" id="cmt-${c.id}-${ci}">
     <div class="c-av" style="background:${cm.avBg};color:${cm.avC}">${cm.av}</div>
     <div style="flex:1"><div class="c-meta">${cm.name}<span class="c-time-sm">${cm.time}</span></div><div class="c-text">${cm.text}</div></div>
-    ${isAdmin?`<button onclick="adminDeleteComment(${c.id},${ci})" style="background:transparent;border:none;color:var(--tm);cursor:pointer;padding:4px 6px;font-size:14px;flex-shrink:0" title="コメント削除">🗑</button>`:''}
+    ${isAdmin?'<button onclick="adminDeleteComment('+c.id+','+ci+')" style="background:transparent;border:none;color:var(--tm);cursor:pointer;padding:4px 6px;font-size:14px;flex-shrink:0" title="コメント削除">\U0001f5d1</button>':''}
   </div>`).join('');
 
   document.getElementById('det-body').innerHTML=`
@@ -1390,7 +1380,7 @@ function buildDetail(id){
 
   <div class="det-sec">
     <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">タグ</div></div>
-    <div>${c.tags.map(t=>`<span class="det-tag ${/ROSC|VF|ヒヤリ|PEA/.test(t)?'hl':''}">${t}</span>`).join('')}</div>
+    <div>${c.tags.map(t=>'<span class="det-tag '+(/ROSC|VF|ヒヤリ|PEA/.test(t)?'hl':'')+'">'+t+'</span>').join('')}</div>
   </div>
 
   <div class="det-sec">
@@ -1515,13 +1505,13 @@ function buildTimepointCard(idx){
       <div class="tp-find-item"><div class="tp-find-lbl">心調律</div>
         <select class="tp-find-inp" style="cursor:pointer">
           <option value="">選択...</option>
-          ${RHYTHM_LIST.map(r=>`<option>${r}</option>`).join('')}
+          ${RHYTHM_LIST.map(r=>'<option>'+r+'</option>').join('')}
         </select>
       </div>
       <div class="tp-find-item"><div class="tp-find-lbl">ST変化</div>
         <select class="tp-find-inp" style="cursor:pointer">
           <option value="">選択...</option>
-          ${ST_LIST.map(s=>`<option>${s}</option>`).join('')}
+          ${ST_LIST.map(s=>'<option>'+s+'</option>').join('')}
         </select>
       </div>
     </div>
@@ -1529,7 +1519,7 @@ function buildTimepointCard(idx){
 
     <div class="tp-sub" style="--sub-c:#48bb78">実施処置</div>
     <div class="tp-chips">
-      ${TREATMENT_LIST.map(t=>`<div class="tp-chip" onclick="this.classList.toggle('on')">${t}</div>`).join('')}
+      ${TREATMENT_LIST.map(t=>'<div class="tp-chip" onclick="this.classList.toggle(\'on\')">'+t+'</div>').join('')}
     </div>
     <textarea class="tp-note-inp" style="margin-top:10px" placeholder="処置の詳細・特定行為メモ（例：気管挿管2回目成功、アドレナリン1mg静注）"></textarea>
 
@@ -1919,24 +1909,36 @@ async function loadAdminUsers(){
     const {data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:true});
     if(error) throw error;
     if(!data||data.length===0){el.innerHTML='<div style="color:var(--tm);padding:8px 0">ユーザーなし</div>';return;}
-    el.innerHTML=data.map(u=>`
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)">
-        <div style="width:32px;height:32px;border-radius:50%;background:${u.av_bg||'rgba(229,62,62,.2)'};border:1.5px solid ${u.av_color||'#e53e3e'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${u.av_color||'#e53e3e'};flex-shrink:0">${(u.nickname||'?').slice(0,2)}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:var(--tp);display:flex;align-items:center;gap:6px">
-            ${u.nickname||'未設定'}
-            ${u.is_admin?'<span style="background:var(--acc);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">ADMIN</span>':''}
-          </div>
-          <div style="font-size:11px;color:var(--tm);margin-top:1px">${new Date(u.created_at).toLocaleDateString('ja-JP')} 登録</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="toggleAdminFlag('${u.id}',${u.is_admin},'${(u.nickname||'').replace(/'/g,"\\'")}','${u.id===currentUser?.id}')"
-            style="padding:5px 10px;background:${u.is_admin?'rgba(229,62,62,.12)':'rgba(66,153,225,.12)'};border:1px solid ${u.is_admin?'var(--acc)':'#4299e1'};border-radius:6px;color:${u.is_admin?'#fc8181':'#90cdf4'};font-size:11px;cursor:pointer;white-space:nowrap">
-            ${u.is_admin?'管理者解除':'管理者設定'}
-          </button>
-          ${u.id===currentUser?.id?'':'<button onclick="adminDeleteUser(''+u.id+'',''+((u.nickname||'').replace(/'/g,"\\'"))+'')" style="padding:5px 10px;background:rgba(229,62,62,.12);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap">削除</button>'}
-        </div>
-      </div>`).join('');
+    adminUserCache={};
+    data.forEach(u=>{ adminUserCache[u.id]=u; });
+    const rows=data.map(u=>{
+      const isSelf=u.id===currentUser?.id;
+      const nick=(u.nickname||'未設定');
+      const avBg=u.av_bg||'rgba(229,62,62,.2)';
+      const avC=u.av_color||'#e53e3e';
+      const regDate=new Date(u.created_at).toLocaleDateString('ja-JP');
+      const adminLabel=u.is_admin?'管理者解除':'管理者設定';
+      const adminBg=u.is_admin?'rgba(229,62,62,.12)':'rgba(66,153,225,.12)';
+      const adminBd=u.is_admin?'#e53e3e':'#4299e1';
+      const adminCol=u.is_admin?'#fc8181':'#90cdf4';
+      const adminBadge=u.is_admin?'<span style="background:#e53e3e;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">ADMIN</span>':'';
+      const selfLabel=isSelf?'<span style="font-size:11px;color:var(--tm);padding:5px 4px">（自分）</span>':'';
+      const delBtn=isSelf?''
+        :'<button data-uid="'+u.id+'" onclick="handleUserDelete(this)"'
+        +' style="padding:5px 10px;background:rgba(229,62,62,.12);border:1px solid #e53e3e;border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap">削除</button>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)">'
+        +'<div style="width:32px;height:32px;border-radius:50%;background:'+avBg+';border:1.5px solid '+avC+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+avC+';flex-shrink:0">'+nick.slice(0,2)+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;color:var(--tp);display:flex;align-items:center;gap:6px">'+nick+adminBadge+'</div>'
+        +'<div style="font-size:11px;color:var(--tm);margin-top:1px">'+regDate+' 登録</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button data-uid="'+u.id+'" data-admin="'+u.is_admin+'" onclick="handleAdminToggle(this)"'
+        +' style="padding:5px 10px;background:'+adminBg+';border:1px solid '+adminBd+';border-radius:6px;color:'+adminCol+';font-size:11px;cursor:pointer;white-space:nowrap">'+adminLabel+'</button>'
+        +selfLabel+delBtn
+        +'</div></div>';
+    });
+    el.innerHTML=rows.join('');
   } catch(e) {
     el.innerHTML='<div style="color:var(--tm);padding:8px 0">Supabase未接続のため表示できません</div>';
   }
