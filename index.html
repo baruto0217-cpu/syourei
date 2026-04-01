@@ -131,7 +131,7 @@ button{cursor:pointer}
 .lbadges{display:flex;gap:6px;flex-wrap:wrap;flex:1}
 .tbdg{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;background:var(--tbb);color:var(--tbc);border:1px solid var(--tbbd)}
 .cbdg{padding:3px 9px;border-radius:20px;font-size:11px}
-.ltime{font-size:11px;color:var(--tm);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-top:2px}
+.ltime{font-size:11px;color:var(--tm);white-space:nowrap;margin-top:2px;letter-spacing:.01em}
 .lcard-mid{padding:10px 16px 0 18px}
 .lcard-title{font-size:14px;font-weight:500;color:var(--tp);line-height:1.55;margin-bottom:6px}
 .pt-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
@@ -719,7 +719,7 @@ const CASES = [
      good:'VFへの移行を12誘導で早期に検出できた。除細動の判断は迅速だった。ETCO2装着で換気評価ができた。',
      learn:'PEA症例では可逆的原因（4H4T）の系統的評価が重要。次回はチェックリストを活用し全員で確認する。'},
    author:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',
-   time:'2時間前',daysAgo:0,likes:12,
+   created_at:'2026-04-01T10:33:44',daysAgo:0,likes:12,
    comments:[
      {name:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',time:'1時間前',text:'4H4Tの評価、現場でどうやって素早くやりましたか？チェックリストがあれば共有してほしいです。'},
      {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'45分前',text:'アドレナリンのタイミングは本当に悩みますよね。ROSCしたのは素晴らしいです。'}
@@ -755,7 +755,7 @@ const CASES = [
      good:'現場滞在時間を8分に抑えられた。病院事前連絡でER準備が整っており、スムーズに引き継ぎできた。',
      learn:'出血性ショックではLoad and Goの判断が最優先。現場処置の優先順位を出動前にチームで確認する習慣をつける。'},
    author:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',
-   time:'5時間前',daysAgo:0,likes:18,
+   created_at:'2026-04-01T07:33:44',daysAgo:0,likes:18,
    comments:[
      {name:'伊藤 健太',av:'伊',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'4時間前',text:'骨盤ベルト、現場でうまく装着できましたか？コツがあれば教えてください。'},
      {name:'高橋 奈々',av:'高',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'3時間前',text:'現場8分は素晴らしい。日頃のチーム訓練の成果ですね。'}
@@ -792,7 +792,7 @@ const CASES = [
      good:'AF＋抗凝固療法中という情報を早期に取得し、心原性塞栓の可能性を意識した判断ができた。',
      learn:'AF＋失語は心原性脳塞栓を強く疑う組み合わせ。この場合は積極的に脳卒中センターを選択する基準を持つ。'},
    author:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',
-   time:'昨日',daysAgo:1,likes:9,
+   created_at:'2026-03-31T10:33:44',daysAgo:1,likes:9,
    comments:[
      {name:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'20時間前',text:'AF＋失語はほぼ心原性ですよね。搬送先の判断は正解だと思います。後でどうなったか教えてください。'}
    ],liked:false,bookmarked:false},
@@ -827,7 +827,7 @@ const CASES = [
      good:'けいれん終息後の気道管理と側臥位は適切だった。意識レベルの推移を継続観察できていた。',
      learn:'小児の意識障害では低血糖は必須の鑑別項目。発熱があっても血糖測定を初期評価に組み込む。ABCDEに血糖を加えたチェックリストを活用する。'},
    author:'鈴木 愛',av:'鈴',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',
-   time:'2日前',daysAgo:2,likes:21,
+   created_at:'2026-03-30T09:33:44',daysAgo:2,likes:21,
    comments:[
      {name:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'2日前',text:'血糖忘れは自分もやったことがあります。小児の意識障害チェックリストを作りたいですね。'},
      {name:'松本 拓海',av:'松',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'1日前',text:'正直に報告してくれてありがとうございます。チーム全体の学びになります。'}
@@ -863,7 +863,7 @@ const CASES = [
      good:'バイスタンダーとのCPR引き継ぎがスムーズで中断時間を最小化できた。ROSC後に迷わず12誘導を取ったことでST変化を検出できた。',
      learn:'目撃ありCPAではROSC後の12誘導は必須。ST上昇があれば即座に循環器への搬送先変更を検討する。バイスタンダー教育の重要性を改めて実感した。'},
    author:'伊藤 健太',av:'伊',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',
-   time:'3日前',daysAgo:3,likes:34,
+   created_at:'2026-03-29T11:33:44',daysAgo:3,likes:34,
    comments:[
      {name:'佐藤 美咲',av:'佐',avBg:'rgba(237,137,54,.2)',avC:'#ed8936',time:'3日前',text:'ROSC後のST変化をその場で判断できるのが素晴らしい。12誘導の読み方を勉強したいです。'},
      {name:'鈴木 愛',av:'鈴',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'2日前',text:'バイスタンダーの方のCPRが本当に命を救いましたね。市民講習の大切さを改めて感じます。'}
@@ -900,7 +900,7 @@ const CASES = [
      good:'本人が否定的でも冷汗・左肩痛・倦怠感の組み合わせを重視し、繰り返し12誘導を施行し続けた。MC指示を仰いで判断を共有できた。',
      learn:'女性のACSは非典型的症状が多い。倦怠感・肩こり・冷汗の三徴はフラグ。T波変化のみでも循環器搬送を考慮する。後にカテーテルで90%狭窄確認。判断は正しかった。'},
    author:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',
-   time:'4日前',daysAgo:4,likes:16,
+   created_at:'2026-03-28T10:33:44',daysAgo:4,likes:16,
    comments:[
      {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'4日前',text:'女性のAMIは本当に難しいですよね。非典型症状の勉強会をやりましょう。'},
      {name:'田中 隆',av:'田',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'3日前',text:'T波変化のみでも循環器搬送を選んだ判断が素晴らしい。カテーテルで確認できてよかった。'}
@@ -1072,6 +1072,42 @@ function backToTimeline(){
   document.querySelectorAll('.ntab').forEach((t,i)=>{if(i===0)t.classList.add('on');else t.classList.remove('on');});
 }
 
+// ===== 日時フォーマット =====
+function formatTime(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  if(isNaN(d)) return dateStr;
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr  = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  // 相対表現
+  let rel='';
+  if(diffMin < 1)        rel = 'たった今';
+  else if(diffMin < 60)  rel = `${diffMin}分前`;
+  else if(diffHr  < 24)  rel = `${diffHr}時間前`;
+  else if(diffDay < 7)   rel = `${diffDay}日前`;
+  else                   rel = `${diffDay}日前`;
+
+  // 日付表現
+  const y = d.getFullYear();
+  const m = d.getMonth()+1;
+  const day = d.getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+  d.setHours(0,0,0,0);
+
+  let dateLabel='';
+  if(d.getTime() === today.getTime())         dateLabel = '今日';
+  else if(d.getTime() === yesterday.getTime()) dateLabel = '昨日';
+  else                                         dateLabel = `${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
+
+  if(diffMin < 1) return dateLabel;
+  return `${dateLabel}（${rel}）`;
+}
+
 // ===== ALERT CLASS =====
 function ac(key,val){
   if(!val||val==='---'||val==='未測定'||val==='0'||/不可|VF|PEA|なし/.test(val)) return 'al';
@@ -1088,7 +1124,7 @@ function getFiltered(){
   if(curQ){arr=arr.filter(c=>c.title.includes(curQ)||c.pt.chief.includes(curQ)||c.tags.some(t=>t.includes(curQ))||c.reflect.learn.includes(curQ)||c.pmhx.includes(curQ));}
   if(curSort==='like') arr.sort((a,b)=>(likeSt[b.id]??b.likes)-(likeSt[a.id]??a.likes));
   else if(curSort==='cmt') arr.sort((a,b)=>b.comments.length-a.comments.length);
-  else arr.sort((a,b)=>a.daysAgo-b.daysAgo);
+  else arr.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   return arr;
 }
 
@@ -1114,7 +1150,7 @@ function renderFeed(){
           <span class="tbdg" style="--tbb:${ts.bg};--tbc:${ts.c};--tbbd:${ts.bd}">${em} ${c.type}</span>
           <span class="cbdg" style="background:rgba(${c.cr},.12);color:${c.cc};border:1px solid rgba(${c.cr},.28)">${c.cat}</span>
         </div>
-        <span class="ltime">${c.time}</span>
+        <span class="ltime">${formatTime(c.created_at||c.time)}</span>
       </div>
       <div class="lcard-mid" onclick="showDetail(${c.id})">
         <div class="lcard-title">${c.title}</div>
@@ -1523,9 +1559,124 @@ function calcChars(){
   });
   document.getElementById('char-cnt').textContent=n+'文字';
 }
-function submitCase(){
-  showToast('症例を投稿しました ✓');
-  setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),1500);
+async function submitCase(){
+  if(!currentUser){showToast('ログインが必要です');return;}
+
+  // 必須チェック
+  const title=document.getElementById('f-chief')?.value.trim();
+  const catEl=document.querySelector('.cat-card.on .cat-name');
+  const typeEl=document.querySelector('.type-pill.on');
+  if(!catEl){showToast('症例カテゴリを選択してください');return;}
+  if(!typeEl){showToast('症例の性質を選択してください');return;}
+  if(!title){showToast('通報内容を入力してください');return;}
+
+  // フォームデータ収集
+  const cat=catEl.textContent.trim();
+  const type=typeEl.textContent.trim();
+  const CAT_COLOR={
+    'CPA・蘇生':'#e53e3e','外傷・多発外傷':'#ed8936',
+    '内因性疾患':'#4299e1','小児・産科':'#48bb78','その他':'#9f7aea'
+  };
+  const CAT_RGB={
+    'CPA・蘇生':'229,62,62','外傷・多発外傷':'237,137,54',
+    '内因性疾患':'66,153,225','小児・産科':'72,187,120','その他':'159,122,234'
+  };
+
+  // タイムポイント収集
+  const tpCards=document.querySelectorAll('#tp-cards .tp-card');
+  const timepoints=Array.from(tpCards).map(card=>{
+    const inputs=card.querySelectorAll('.tp-find-inp');
+    const vitals=card.querySelectorAll('.vital-inp');
+    const notes=card.querySelectorAll('.tp-note-inp');
+    const chips=Array.from(card.querySelectorAll('.tp-chip.on')).map(c=>c.textContent.trim());
+    return {
+      label: card.querySelector('.tp-label-inp')?.value||'',
+      time:  card.querySelector('.tp-time-inp')?.value||'',
+      findings:{
+        consciousness: inputs[0]?.value||'',
+        breathing:     inputs[1]?.value||'',
+        breath_sounds: inputs[2]?.value||'',
+        circulation:   inputs[3]?.value||'',
+        skin:          inputs[4]?.value||'',
+        pupils:        inputs[5]?.value||'',
+      },
+      obs:     notes[0]?.value||'',
+      vitals:{
+        bp:    vitals[0]?.value||'---',
+        hr:    vitals[1]?.value||'---',
+        spo2:  vitals[2]?.value||'---',
+        rr:    vitals[3]?.value||'---',
+        temp:  vitals[4]?.value||'---',
+        bg:    vitals[5]?.value||'---',
+        etco2: vitals[6]?.value||'---',
+      },
+      rhythm:  card.querySelectorAll('.tp-find-inp')[6]?.value||'',
+      st:      card.querySelectorAll('.tp-find-inp')[7]?.value||'',
+      ecgNote: notes[1]?.value||'',
+      treatment: chips,
+      treatmentNote: notes[2]?.value||'',
+    };
+  });
+
+  // タグ収集
+  const tags=Array.from(document.querySelectorAll('#tag-chips .tag-chip.on')).map(t=>t.textContent.trim());
+
+  const caseData={
+    user_id:      currentUser.id,
+    type,cat,
+    title,
+    chief:        document.getElementById('f-chief')?.value.trim()||'',
+    scene:        document.getElementById('f-scene')?.value.trim()||'',
+    pmhx:         document.getElementById('f-pmhx')?.value.trim()||'',
+    meds:         document.getElementById('f-meds')?.value.trim()||'',
+    allergy:      document.getElementById('f-allergy')?.value.trim()||'',
+    timepoints,
+    tags,
+    reflect_worry: document.getElementById('f-worry')?.value.trim()||'',
+    reflect_good:  document.getElementById('f-good')?.value.trim()||'',
+    reflect_learn: document.getElementById('f-learn')?.value.trim()||'',
+  };
+
+  const submitBtn=document.querySelector('.submit-btn');
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='投稿中...';}
+
+  try {
+    const {data,error}=await sb.from('cases').insert(caseData).select().single();
+    if(error) throw error;
+
+    // ローカルのCASES配列にも追加してすぐ表示
+    const nick=currentProfile?.nickname||currentUser.email.split('@')[0];
+    const avC=currentProfile?.av_color||'#e53e3e';
+    const avBg=currentProfile?.av_bg||'rgba(229,62,62,.2)';
+    CASES.unshift({
+      ...data,
+      id: data.id,
+      cc: CAT_COLOR[cat]||'#e53e3e',
+      cr: CAT_RGB[cat]||'229,62,62',
+      pt:{age:'',sex:'',place:'',transport:'',chief:data.chief},
+      reflect:{worry:data.reflect_worry,good:data.reflect_good,learn:data.reflect_learn},
+      author: nick,
+      av: nick.slice(0,2),
+      avBg, avC,
+      likes: 0,
+      comments:[],
+      liked:false,bookmarked:false,
+    });
+
+    showToast('症例を投稿しました ✓');
+    // フォームリセット
+    document.querySelectorAll('.cat-card.on').forEach(e=>e.classList.remove('on'));
+    document.querySelectorAll('.type-pill.on').forEach(e=>e.classList.remove('on'));
+    document.querySelectorAll('.tag-chip.on,.tp-chip.on').forEach(e=>e.classList.remove('on'));
+    document.querySelectorAll('.post-wrap textarea,.post-wrap input[type="text"]').forEach(e=>e.value='');
+    setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),1000);
+    renderFeed();
+  } catch(e) {
+    showToast('投稿失敗: '+e.message);
+    console.error(e);
+  } finally {
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='症例を投稿する →';}
+  }
 }
 
 // ===== MYPAGE =====
@@ -1577,7 +1728,7 @@ async function updateMyPage(){
       <div class="my-post-meta">
         <span>${TYPE_EM[c.type]||''} ${c.type}</span>
         <span>${c.cat}</span>
-        <span>${c.time}</span>
+        <span>${formatTime(c.created_at||c.time)}</span>
       </div>
     </div>`).join('');
   }
@@ -1670,7 +1821,7 @@ async function loadAdminCases(){
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.title}</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">${c.author} · ${c.time}</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">${c.author} · ${formatTime(c.created_at||c.time)}</div>
         </div>
         <button onclick="adminDeleteCase(${c.id},null)" style="padding:5px 10px;background:rgba(229,62,62,.15);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">削除</button>
       </div>`).join('');
@@ -1693,13 +1844,13 @@ async function adminDeleteCaseById(caseId){
 async function loadAdminUsers(){
   const el=document.getElementById('admin-users');
   if(!el) return;
-  el.innerHTML='<div style="color:var(--tm);padding:8px">読み込み中...</div>';
+  el.innerHTML='<div style="color:var(--tm);padding:8px 0">読み込み中...</div>';
   try {
     const {data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:true});
     if(error) throw error;
-    if(!data||data.length===0){el.innerHTML='<div style="color:var(--tm);padding:8px">ユーザーなし</div>';return;}
+    if(!data||data.length===0){el.innerHTML='<div style="color:var(--tm);padding:8px 0">ユーザーなし</div>';return;}
     el.innerHTML=data.map(u=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)">
         <div style="width:32px;height:32px;border-radius:50%;background:${u.av_bg||'rgba(229,62,62,.2)'};border:1.5px solid ${u.av_color||'#e53e3e'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${u.av_color||'#e53e3e'};flex-shrink:0">${(u.nickname||'?').slice(0,2)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;color:var(--tp);display:flex;align-items:center;gap:6px">
@@ -1708,17 +1859,21 @@ async function loadAdminUsers(){
           </div>
           <div style="font-size:11px;color:var(--tm);margin-top:1px">${new Date(u.created_at).toLocaleDateString('ja-JP')} 登録</div>
         </div>
-        <button onclick="toggleAdminFlag('${u.id}',${u.is_admin},'${u.nickname||''}')"
-          style="padding:5px 10px;background:${u.is_admin?'rgba(229,62,62,.15)':'rgba(66,153,225,.15)'};border:1px solid ${u.is_admin?'var(--acc)':'#4299e1'};border-radius:6px;color:${u.is_admin?'#fc8181':'#90cdf4'};font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">
-          ${u.is_admin?'管理者解除':'管理者に設定'}
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="toggleAdminFlag('${u.id}',${u.is_admin},'${(u.nickname||'').replace(/'/g,"\\'")}','${u.id===currentUser?.id}')"
+            style="padding:5px 10px;background:${u.is_admin?'rgba(229,62,62,.12)':'rgba(66,153,225,.12)'};border:1px solid ${u.is_admin?'var(--acc)':'#4299e1'};border-radius:6px;color:${u.is_admin?'#fc8181':'#90cdf4'};font-size:11px;cursor:pointer;white-space:nowrap">
+            ${u.is_admin?'管理者解除':'管理者設定'}
+          </button>
+          ${u.id===currentUser?.id?'':'<button onclick="adminDeleteUser(''+u.id+'',''+((u.nickname||'').replace(/'/g,"\\'"))+'')" style="padding:5px 10px;background:rgba(229,62,62,.12);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap">削除</button>'}
+        </div>
       </div>`).join('');
   } catch(e) {
-    el.innerHTML='<div style="color:var(--tm);padding:8px">Supabase未接続のため表示できません</div>';
+    el.innerHTML='<div style="color:var(--tm);padding:8px 0">Supabase未接続のため表示できません</div>';
   }
 }
 
-async function toggleAdminFlag(userId, currentIsAdmin, nickname){
+async function toggleAdminFlag(userId, currentIsAdmin, nickname, isSelf){
+  if(isSelf==='true'){showToast('自分自身の管理者権限は変更できません');return;}
   const newVal=!currentIsAdmin;
   const msg=newVal?`${nickname} を管理者に設定しますか？`:`${nickname} の管理者権限を解除しますか？`;
   if(!confirm(msg)) return;
@@ -1726,6 +1881,21 @@ async function toggleAdminFlag(userId, currentIsAdmin, nickname){
   if(error){showToast('エラー: '+error.message);return;}
   showToast(newVal?'管理者に設定しました':'管理者権限を解除しました');
   loadAdminUsers();
+}
+
+async function adminDeleteUser(userId, nickname){
+  if(!confirm(`「${nickname}」を削除しますか？\nこのユーザーの投稿・コメントも削除されます。\nこの操作は取り消せません。`)) return;
+  try {
+    // profilesのレコードを削除（CASCADE設定によりauth.usersも連動）
+    const {error}=await sb.from('profiles').delete().eq('id',userId);
+    if(error) throw error;
+    showToast(`${nickname} を削除しました`);
+    loadAdminUsers();
+  } catch(e) {
+    // auth.usersの削除はservice_roleが必要なためprofilesのみ削除
+    showToast('プロフィールを削除しました（認証情報はSupabaseダッシュボードから削除してください）');
+    loadAdminUsers();
+  }
 }
 
 // ===== TOAST =====
