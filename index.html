@@ -6,7 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>救急ケースノート</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" onerror="loadSupabaseFallback()"></script>
+<script>
+function loadSupabaseFallback(){
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js';
+  document.head.appendChild(s);
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -396,6 +403,7 @@ button{cursor:pointer}
     </div>
 
     <div class="login-hint">※このシステムは署内のEMS隊員専用です</div>
+    <div id="sb-status" style="margin-top:10px;font-size:11px;text-align:center;color:var(--tm)">接続確認中...</div>
   </div>
 </div>
 
@@ -923,7 +931,7 @@ const VU=['','mmHg','bpm','%','回/分','mg/dL','°C'];
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://ytpdelbmsrhqzmjraljp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cGRlbGJtc3JocXptanJhbGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTk5MDIsImV4cCI6MjA5MDI3NTkwMn0.HGYuB79VrZvKI7j7FVb_umKEW9rt92RNbbEtOvSSjXs';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb = null; // appInit内で初期化
 
 let curFilter='all',curSort='new',curQ='';
 let likeSt={},bkmSt={};
@@ -957,17 +965,24 @@ function switchAuthTab(tab){
 }
 
 async function doLogin(){
+  if(!sb){showAuthErr('login-err','接続を初期化中です。少し待ってから再試行してください。');return;}
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
   hideAuthErr('login-err');
   if(!email||!pass){showAuthErr('login-err','メールアドレスとパスワードを入力してください');return;}
   setLoading('login-btn','login-spinner','login-btn-txt',true);
-  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  try {
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error) showAuthErr('login-err', error.message.includes('Invalid')||error.message.includes('credentials')
+      ?'メールアドレスまたはパスワードが違います':error.message);
+  } catch(e){
+    showAuthErr('login-err','通信エラーが発生しました: '+e.message);
+  }
   setLoading('login-btn','login-spinner','login-btn-txt',false);
-  if(error) showAuthErr('login-err', error.message.includes('Invalid')?'メールアドレスまたはパスワードが違います':error.message);
 }
 
 async function doSignup(){
+  if(!sb){showAuthErr('signup-err','接続を初期化中です。少し待ってから再試行してください。');return;}
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
   const nick=document.getElementById('signup-nick').value.trim();
@@ -989,6 +1004,7 @@ async function doSignup(){
 }
 
 async function doReset(){
+  if(!sb){showAuthErr('reset-err','接続を初期化中です。');return;}
   const email=document.getElementById('reset-email').value.trim();
   hideAuthErr('reset-err');
   if(!email){showAuthErr('reset-err','メールアドレスを入力してください');return;}
@@ -1030,14 +1046,7 @@ async function onAuthChange(user){
   }
 }
 
-// 認証状態の監視
-sb.auth.onAuthStateChange((event,session)=>{
-  if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
-    onAuthChange(session.user);
-  } else if(event==='SIGNED_OUT'){
-    currentUser=null; currentProfile=null;
-  }
-});
+// 認証状態の監視はappInit内で登録
 
 // エンターキー対応
 document.addEventListener('keydown',e=>{
@@ -1988,6 +1997,8 @@ async function appInit(){
     else renderFeed();
   } catch(e) {
     console.warn('セッション取得失敗:', e.message);
+    const statusEl2=document.getElementById('sb-status');
+    if(statusEl2) statusEl2.textContent='⚠ 接続エラー: '+e.message;
     fetchAndRenderFeed();
   }
 }
