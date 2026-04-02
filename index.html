@@ -88,7 +88,8 @@ button{cursor:pointer}
 .sec-line{flex:1;height:1px;background:var(--bd)}
 
 .form-label{font-size:12px;font-weight:500;color:var(--ts);margin-bottom:6px;display:flex;align-items:center;gap:5px;letter-spacing:.03em}
-.req{width:4px;height:4px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.req{display:inline-flex;align-items:center;background:rgba(229,62,62,.15);border:1px solid rgba(229,62,62,.4);color:var(--acc);font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.req::before{content:'必須'}
 .form-input,.form-select,.form-textarea{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:14px;padding:10px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
 .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--acc)}
 .form-input::placeholder,.form-textarea::placeholder{color:var(--tm)}
@@ -248,6 +249,7 @@ button{cursor:pointer}
 .vital-item-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.04em}
 .vital-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;padding:7px 8px;text-align:center;outline:none;transition:border-color .2s}
 .vital-inp:focus{border-color:var(--acc)}
+.vital-inp::placeholder{color:var(--tm);font-weight:400;font-size:11px;opacity:.35}
 .vital-unit{font-size:10px;color:var(--tm);text-align:center;margin-top:3px}
 .vital-add-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--bd);border-radius:var(--r);color:var(--tm);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:14px}
 .vital-add-btn:hover{border-color:var(--bd2);color:var(--ts);background:var(--card)}
@@ -276,6 +278,7 @@ button{cursor:pointer}
 .vital-item-lbl{font-size:10px;color:var(--tm);margin-bottom:4px;letter-spacing:.04em}
 .vital-inp{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;padding:7px 8px;text-align:center;outline:none;transition:border-color .2s}
 .vital-inp:focus{border-color:var(--acc)}
+.vital-inp::placeholder{color:var(--tm);font-weight:400;font-size:11px;opacity:.35}
 .vital-unit{font-size:10px;color:var(--tm);text-align:center;margin-top:3px}
 .tp-chips{display:flex;flex-wrap:wrap;gap:6px}
 .tp-chip{padding:5px 11px;border-radius:20px;font-size:12px;border:1px solid var(--bd);color:var(--ts);cursor:pointer;background:var(--inp);transition:all .2s}
@@ -538,6 +541,14 @@ button{cursor:pointer}
             <textarea class="form-textarea" id="f-chief" placeholder="例：自宅で倒れているのを発見、意識がない。すぐ来てほしい。" oninput="calcChars()"></textarea>
           </div>
           <div class="form-group">
+            <div class="form-label"><div class="req"></div>プレアライバルコール内容</div>
+            <textarea class="form-textarea" id="f-prearrival" placeholder="例：CPA・男性・70代・自宅。バイスタンダーCPR実施中。AED手配済み。4分で到着予定。" style="min-height:70px" oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">情報共有・役割分担</div>
+            <textarea class="form-textarea" id="f-roles" placeholder="例：隊長→指揮・気道管理、隊員A→胸骨圧迫、隊員B→AED・記録。現場到着前に役割を確認。" style="min-height:70px" oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
             <div class="form-label">現場状況の詳細</div>
             <textarea class="form-textarea" id="f-scene" placeholder="例：目撃あり・ダウンタイム約5分。バイスタンダーCPR実施中に現着。AEDはショック不適応。" style="min-height:90px" oninput="calcChars()"></textarea>
           </div>
@@ -615,6 +626,7 @@ button{cursor:pointer}
             <div class="tag-chip" onclick="this.classList.toggle('on')">#ヒヤリハット</div>
             <div class="tag-chip" onclick="this.classList.toggle('on')">#非典型的症状</div>
             <div class="tag-chip" onclick="this.classList.toggle('on')">#特定行為</div>
+            <div class="tag-chip" onclick="this.classList.toggle('on')">#周産期</div>
           </div>
         </div>
 
@@ -1689,11 +1701,15 @@ async function submitCase(){
 
   // 必須チェック
   const chief = document.getElementById('f-chief')?.value.trim()||'';
+  const prearrival = document.getElementById('f-prearrival')?.value.trim()||'';
   const catEl  = document.querySelector('.cat-card.on .cat-name');
   const typeEl = document.querySelector('.type-pill.on');
-  if(!catEl)  {showToast('症例カテゴリを選択してください');return;}
-  if(!typeEl) {showToast('症例の性質を選択してください');return;}
-  if(!chief)  {showToast('通報内容を入力してください');return;}
+  if(!catEl)      {showToast('症例カテゴリを選択してください');return;}
+  if(!typeEl)     {showToast('症例の性質を選択してください');return;}
+  if(!chief)      {showToast('通報内容を入力してください');return;}
+  if(!prearrival) {showToast('プレアライバルコール内容を入力してください');return;}
+  const scene = document.getElementById('f-scene')?.value.trim()||'';
+  if(!scene)  {showToast('現場状況の詳細を入力してください');return;}
 
   const cat  = catEl.textContent.trim();        // 例: CPA・蘇生
   const type = stripEmoji(typeEl.textContent);  // emoji除去: 悩んだ症例
@@ -1755,7 +1771,7 @@ async function submitCase(){
     type, cat,
     title:   autoTitle,
     chief,
-    scene:   document.getElementById('f-scene')?.value.trim()||'',
+    scene,  // 上で取得済み
     pmhx:    document.getElementById('f-pmhx')?.value.trim()||'',
     meds:    document.getElementById('f-meds')?.value.trim()||'',
     allergy: document.getElementById('f-allergy')?.value.trim()||'',
