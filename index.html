@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>救急ケースノート</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -1068,6 +1069,46 @@ function showDetail(id){
   document.getElementById('page-detail').classList.add('active');
 }
 
+// マイページからDBのIDで詳細を表示（CASES配列にない場合はDBから取得）
+async function showDetailById(id){
+  // まずローカルCASESで探す
+  const local = CASES.find(c=>c.id==id);
+  if(local){
+    showDetail(local.id);
+    return;
+  }
+  // なければDBから取得
+  if(!sb) return;
+  try {
+    const {data,error}=await sb.from('cases').select('*').eq('id',id).single();
+    if(error||!data) throw error||new Error('not found');
+    const {data:prof}=await sb.from('profiles').select('id,nickname,av_color,av_bg').eq('id',data.user_id).single();
+    const CAT_META={
+      'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
+      '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
+      '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
+      '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
+      'その他':{cc:'#9f7aea',cr:'159,122,234'},
+    };
+    const m=CAT_META[data.cat]||{cc:'#888',cr:'128,128,128'};
+    const nick=prof?.nickname||'不明';
+    const caseObj={
+      ...data, cc:m.cc, cr:m.cr,
+      pt:{age:'',sex:'',place:'',transport:'',chief:data.chief||''},
+      reflect:{worry:data.reflect_worry||'',good:data.reflect_good||'',learn:data.reflect_learn||''},
+      author:nick, av:nick.slice(0,2),
+      avBg:prof?.av_bg||'rgba(136,136,136,.2)', avC:prof?.av_color||'#888',
+      likes:0, comments:[], liked:false, bookmarked:false,
+      timepoints:data.timepoints||[], tags:data.tags||[],
+    };
+    // CASESに追加してから表示
+    CASES.push(caseObj);
+    showDetail(caseObj.id);
+  } catch(e){
+    showToast('詳細の取得に失敗しました: '+e.message);
+  }
+}
+
 function backToTimeline(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-timeline').classList.add('active');
@@ -1123,24 +1164,43 @@ function ac(key,val){
 
 // Supabaseから症例一覧を取得してCASES配列を更新→描画
 async function fetchAndRenderFeed(){
+  // sbが未初期化ならサンプルデータで描画
+  if(!sb){
+    renderFeed();
+    return;
+  }
+  const CAT_META={
+    'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
+    '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
+    '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
+    '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
+    'その他':{cc:'#9f7aea',cr:'159,122,234'},
+  };
   try {
-    const {data,error}=await sb.from('cases')
-      .select('*, profiles(nickname, av_color, av_bg)')
+    // まずcasesのみ取得（JOINエラーを避けるため）
+    const {data,error}=await sb
+      .from('cases')
+      .select('*')
       .order('created_at',{ascending:false})
       .limit(100);
     if(error) throw error;
+
+    // profilesを別途取得
+    const uids=[...new Set((data||[]).map(d=>d.user_id).filter(Boolean))];
+    let profileMap={};
+    if(uids.length>0){
+      const {data:profs}=await sb
+        .from('profiles')
+        .select('id,nickname,av_color,av_bg')
+        .in('id',uids);
+      (profs||[]).forEach(p=>{ profileMap[p.id]=p; });
+    }
+
     if(data && data.length>0){
-      const CAT_META={
-        'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
-        '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
-        '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
-        '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
-        'その他':{cc:'#9f7aea',cr:'159,122,234'},
-      };
-      // DB取得データをCASES配列の形式に変換（サンプルと混在させず上書き）
-      const dbCases = data.map(d=>{
+      const dbCases=data.map(d=>{
         const m=CAT_META[d.cat]||{cc:'#888',cr:'128,128,128'};
-        const nick=d.profiles?.nickname||'不明';
+        const prof=profileMap[d.user_id]||{};
+        const nick=prof.nickname||'不明';
         return {
           ...d,
           cc:m.cc, cr:m.cr,
@@ -1150,23 +1210,26 @@ async function fetchAndRenderFeed(){
             good: d.reflect_good||'',
             learn:d.reflect_learn||'',
           },
-          author: nick,
-          av: nick.slice(0,2),
-          avBg: d.profiles?.av_bg||'rgba(136,136,136,.2)',
-          avC:  d.profiles?.av_color||'#888',
-          likes: 0,
+          author:nick,
+          av:nick.slice(0,2),
+          avBg:prof.av_bg||'rgba(136,136,136,.2)',
+          avC:prof.av_color||'#888',
+          likes:0,
           comments:[],
-          liked:false, bookmarked:false,
-          timepoints: d.timepoints||[],
-          tags: d.tags||[],
+          liked:false,bookmarked:false,
+          timepoints:d.timepoints||[],
+          tags:d.tags||[],
         };
       });
-      // サンプルデータを残しつつDBデータを先頭に
-      // ※Supabase接続後はDBデータのみ表示したい場合は下行を CASES.splice(0) にする
+      // DBデータでCASES配列を完全上書き（サンプルを除去）
       CASES.splice(0, CASES.length, ...dbCases);
+    } else if(data && data.length===0){
+      // 投稿が0件の場合はサンプルも消す
+      CASES.splice(0, CASES.length);
     }
   } catch(e){
-    console.warn('Supabase取得失敗、サンプルデータを表示:', e.message);
+    console.error('Supabase取得エラー:', e.message);
+    showToast('データ取得エラー: '+e.message);
   }
   renderFeed();
 }
@@ -1768,29 +1831,24 @@ async function updateMyPage(){
     if(error) throw error;
     if(data&&data.length>0){
       document.getElementById('my-stat-posts').textContent=data.length;
-      mp.innerHTML=data.map(c=>`<div class="my-post-item" onclick="showDetail(${c.id})">
-        <div class="my-post-title">${c.title}</div>
-        <div class="my-post-meta">
-          <span>${TYPE_EM[c.type]||''} ${c.type}</span>
-          <span>${c.cat}</span>
-          <span>${new Date(c.created_at).toLocaleDateString('ja-JP')}</span>
-        </div>
-      </div>`).join('');
+      mp.innerHTML=data.map(c=>{
+        const em=TYPE_EM[c.type]||'📋';
+        const dt=new Date(c.created_at).toLocaleDateString('ja-JP');
+        return '<div class="my-post-item" onclick="showDetailById('+c.id+')">'+
+          '<div class="my-post-title">'+c.title+'</div>'+
+          '<div class="my-post-meta">'+
+            '<span>'+em+' '+c.type+'</span>'+
+            '<span>'+c.cat+'</span>'+
+            '<span>'+dt+'</span>'+
+          '</div>'+
+        '</div>';
+      }).join('');
     } else {
       mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">まだ投稿がありません</div>';
     }
   } catch(e) {
-    // Supabase未設定時はサンプルで代替
-    const myC=CASES.filter(c=>c.author);
-    document.getElementById('my-stat-posts').textContent=myC.length;
-    mp.innerHTML=myC.map(c=>`<div class="my-post-item" onclick="showDetail(${c.id})">
-      <div class="my-post-title">${c.title}</div>
-      <div class="my-post-meta">
-        <span>${TYPE_EM[c.type]||''} ${c.type}</span>
-        <span>${c.cat}</span>
-        <span>${formatTime(c.created_at||c.time)}</span>
-      </div>
-    </div>`).join('');
+    console.error('マイページ取得エラー:', e.message);
+    mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">読み込みエラーが発生しました</div>';
   }
 }
 
@@ -1986,14 +2044,33 @@ async function appInit(){
     container.appendChild(buildTimepointCard(1)); tpCount++;
     container.appendChild(buildTimepointCard(2)); tpCount++;
   }
-  // Supabase SDK未ロード時のフォールバック
-  if(!window.supabase){
+  // Supabase SDK初期化
+  if(!window.supabase || !window.supabase.createClient){
     console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
     fetchAndRenderFeed();
     return;
   }
-  // セッション復元（ページリロード時に自動ログイン）
   try {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch(e){
+    console.error('Supabase初期化失敗:', e.message);
+    fetchAndRenderFeed();
+    return;
+  }
+
+  // 認証状態の監視（sb初期化後に登録）
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
+      onAuthChange(session.user);
+    } else if(event==='SIGNED_OUT'){
+      currentUser=null; currentProfile=null;
+    }
+  });
+
+  // セッション復元
+  try {
+    const statusEl=document.getElementById('sb-status');
+    if(statusEl) statusEl.textContent='✓ 接続完了';
     const {data:{session}}=await sb.auth.getSession();
     if(session) await onAuthChange(session.user);
     else renderFeed();
