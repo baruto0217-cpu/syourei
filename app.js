@@ -252,7 +252,7 @@ const CMT_TYPES=[
   {key:'info',     label:'情報共有',  color:'#ed8936', bg:'rgba(237,137,54,.15)'},
   {key:'reflect',  label:'振り返り', color:'#fc8181', bg:'rgba(229,62,62,.15)'},
 ];
-let curCmtType='question';
+let curCmtType=null;
 
 // ===== AUTH HELPERS =====
 function setLoading(btnId, spinnerId, txtId, loading){
@@ -759,7 +759,7 @@ function buildDetail(id){
   var cmtTypeBtns='';
   for(var ki=0;ki<CMT_TYPES.length;ki++){
     var t2=CMT_TYPES[ki];
-    var isActive=(t2.key===curCmtType);
+    var isActive=(curCmtType&&t2.key===curCmtType);
     var styleAttr=isActive?(' style="border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg+';opacity:1;font-weight:700"'):'';
     cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'"'+styleAttr+' onclick="selectCmtType(\''+t2.key+'\',this)">'+t2.label+'</button>';
   }
@@ -829,18 +829,21 @@ function buildDetail(id){
 
 
 function selectCmtType(key, el){
-  curCmtType=key;
-  // elの親（cmt-type-row）を起点にスコープを絞る
   const row=el?el.closest('.cmt-type-row'):null;
   const btns=row
     ? row.querySelectorAll('.cmt-type-btn')
     : document.querySelectorAll('.cmt-type-btn');
-  // 全ボタンをリセット
-  btns.forEach(function(b){
-    b.classList.remove('on');
-    b.removeAttribute('style');  // インラインスタイルを完全削除
-  });
-  // 選択ボタンをアクティブに
+
+  // 同じタブを再度押したら選択解除（トグル）
+  if(curCmtType===key){
+    curCmtType=null;
+    btns.forEach(function(b){ b.classList.remove('on'); b.removeAttribute('style'); });
+    return;
+  }
+
+  // 別のタブを押したら切り替え
+  curCmtType=key;
+  btns.forEach(function(b){ b.classList.remove('on'); b.removeAttribute('style'); });
   if(el){
     el.classList.add('on');
     const t=CMT_TYPES.find(function(t){return t.key===key;});
@@ -865,7 +868,7 @@ async function postCmt(id){
     case_id:id,
     user_id:currentUser.id,
     body,
-    cmt_type:curCmtType,
+    cmt_type:curCmtType||null,
   };
 
   try {
@@ -883,18 +886,10 @@ async function postCmt(id){
     }
     inp.value='';
     showToast('コメントを送信しました');
-    // コメントタイプを「質問」にリセット
-    curCmtType='question';
-    const firstBtn=document.querySelector('#cmt-type-row-'+id+' .cmt-type-btn');
-    if(firstBtn){
-      // 全ボタンリセット
-      const row=firstBtn.closest('.cmt-type-row');
-      if(row) row.querySelectorAll('.cmt-type-btn').forEach(function(b){b.classList.remove('on');b.removeAttribute('style');});
-      // 最初のボタン（質問）をアクティブに
-      firstBtn.classList.add('on');
-      var t0=CMT_TYPES[0];
-      if(t0) firstBtn.style.cssText='border-color:'+t0.color+';color:'+t0.color+';background:'+t0.bg+';opacity:1;font-weight:700';
-    }
+    // コメントタイプ選択を解除
+    curCmtType=null;
+    const row=document.querySelector('#cmt-type-row-'+id);
+    if(row) row.querySelectorAll('.cmt-type-btn').forEach(function(b){b.classList.remove('on');b.removeAttribute('style');});
     // コメント欄を再描画
     refreshComments(id);
   } catch(e){
