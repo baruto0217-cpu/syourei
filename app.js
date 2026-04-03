@@ -759,8 +759,10 @@ function buildDetail(id){
   var cmtTypeBtns='';
   for(var ki=0;ki<CMT_TYPES.length;ki++){
     var t2=CMT_TYPES[ki];
-    var onStyle=ki===0?'border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg:'';
-    cmtTypeBtns+='<button class="cmt-type-btn'+(ki===0?' on':'')+'" onclick="selectCmtType(\''+t2.key+'\',this)" style="'+onStyle+'">'+t2.label+'</button>';
+    // 選択中のタイプと一致する場合（デフォルト:question）はアクティブスタイルを付ける
+    var isActive=(t2.key===curCmtType);
+    var onStyle=isActive?'border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg:'';
+    cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'" onclick="selectCmtType(\''+t2.key+'\',this)" style="'+onStyle+'">'+t2.label+'</button>';
   }
 
   // タグHTML
@@ -829,14 +831,22 @@ function buildDetail(id){
 
 function selectCmtType(key, el){
   curCmtType=key;
-  document.querySelectorAll('.cmt-type-btn').forEach(b=>b.classList.remove('on'));
-  if(el) el.classList.add('on');
-  // ボタンの色を選択中タイプに合わせる
-  const t=CMT_TYPES.find(t=>t.key===key);
-  if(el && t){
-    el.style.borderColor=t.color;
-    el.style.color=t.color;
-    el.style.background=t.bg;
+  // 全ボタンをリセット（クラスもインラインスタイルも）
+  document.querySelectorAll('.cmt-type-btn').forEach(b=>{
+    b.classList.remove('on');
+    b.style.borderColor='';
+    b.style.color='';
+    b.style.background='';
+  });
+  // 選択したボタンをアクティブに
+  if(el){
+    el.classList.add('on');
+    const t=CMT_TYPES.find(t=>t.key===key);
+    if(t){
+      el.style.borderColor=t.color;
+      el.style.color=t.color;
+      el.style.background=t.bg;
+    }
   }
 }
 
@@ -873,6 +883,10 @@ async function postCmt(id){
     }
     inp.value='';
     showToast('コメントを送信しました');
+    // コメントタイプを「質問」にリセット
+    curCmtType='question';
+    const firstBtn=document.querySelector('#cmt-type-row-'+id+' .cmt-type-btn');
+    if(firstBtn) selectCmtType('question',firstBtn);
     // コメント欄を再描画
     refreshComments(id);
   } catch(e){
