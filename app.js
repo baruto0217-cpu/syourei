@@ -899,11 +899,12 @@ async function postCmt(id){
   const nick=currentProfile?.nickname||currentUser.email.split('@')[0];
   const avC=currentProfile?.av_color||'#e53e3e';
   const avBg=currentProfile?.av_bg||'rgba(229,62,62,.2)';
+  // cmt_typeがnull（未選択）の場合はフィールドを省略（DB側のdefault 'question'が使われる）
   const cmtData={
     case_id:id,
     user_id:currentUser.id,
     body,
-    cmt_type:curCmtType||null,
+    ...(curCmtType ? {cmt_type:curCmtType} : {}),
   };
 
   try {
