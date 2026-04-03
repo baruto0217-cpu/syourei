@@ -207,9 +207,11 @@ button{cursor:pointer}
 .c-send{background:var(--acc);border:none;border-radius:var(--r);color:#fff;font-size:13px;padding:8px 14px;transition:background .2s;white-space:nowrap}
 .c-send:hover{background:#c53030}
 .c-send:disabled{opacity:.5;cursor:not-allowed}
-.cmt-type-row{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0;border-top:1px solid var(--bd)}
-.cmt-type-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--bd);font-size:11px;cursor:pointer;background:var(--inp);color:var(--ts);transition:all .2s;white-space:nowrap}
-.cmt-type-btn.on{font-weight:700}
+.cmt-type-row{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 6px;border-top:1px solid var(--bd)}
+.cmt-type-row-label{font-size:11px;color:var(--tm);padding:8px 14px 0;letter-spacing:.04em}
+.cmt-type-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--bd);font-size:11px;cursor:pointer;background:transparent;color:var(--tm);transition:all .15s;white-space:nowrap;font-family:'Noto Sans JP',sans-serif;opacity:.7}
+.cmt-type-btn:hover{opacity:1;color:var(--ts);border-color:var(--bd2)}
+.cmt-type-btn.on{font-weight:700;opacity:1}
 .cmt-type-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:4px;vertical-align:middle}
 
 /* ========== POST FORM PAGE ========== */
