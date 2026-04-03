@@ -503,7 +503,7 @@ async function fetchAndRenderFeed(){
     'その他':{cc:'#9f7aea',cr:'159,122,234'},
   };
   try {
-    // まずcasesのみ取得（JOINエラーを避けるため）
+    // casesとcomments数を取得
     const {data,error}=await sb
       .from('cases')
       .select('*')
@@ -553,6 +553,13 @@ async function fetchAndRenderFeed(){
       // 投稿が0件の場合はサンプルも消す
       CASES.splice(0, CASES.length);
     }
+    // コメント総数をDBから取得してst-cmtを更新
+    try {
+      const {count:totalCmts}=await sb.from('comments')
+        .select('id',{count:'exact',head:true});
+      const stCmt=document.getElementById('st-cmt');
+      if(stCmt && totalCmts!=null) stCmt.textContent=totalCmts;
+    } catch(_){}
   } catch(e){
     console.error('Supabase取得エラー:', e.message);
     showToast('データ取得エラー: '+e.message);
@@ -583,6 +590,19 @@ function renderFeed(){
   const arr=getFiltered();
   document.getElementById('cnt-lbl').textContent=arr.length+'件表示中';
   document.getElementById('st-total').textContent=CASES.length;
+  // 今週の投稿数
+  const oneWeekAgo=new Date(Date.now()-7*24*60*60*1000);
+  const weekCount=CASES.filter(c=>c.created_at&&new Date(c.created_at)>oneWeekAgo).length;
+  const stWeek=document.getElementById('st-week');
+  if(stWeek) stWeek.textContent=weekCount;
+  // CPA症例数
+  const cpaCount=CASES.filter(c=>c.cat==='CPA・蘇生').length;
+  const stCpa=document.getElementById('st-cpa');
+  if(stCpa) stCpa.textContent=cpaCount;
+  // コメント総数
+  const cmtCount=CASES.reduce(function(sum,c){return sum+(c.comments?c.comments.length:0);},0);
+  const stCmt=document.getElementById('st-cmt');
+  if(stCmt) stCmt.textContent=cmtCount;
   const feed=document.getElementById('feed');
   if(!arr.length){feed.innerHTML='<div class="empty-feed">該当する症例がありません</div>';return;}
   feed.innerHTML=arr.map(c=>{
@@ -1332,6 +1352,31 @@ async function updateMyPage(){
       .eq('user_id',currentUser.id)
       .order('created_at',{ascending:false});
     if(error) throw error;
+
+    // 自分の投稿IDリスト
+    const myIds=(data||[]).map(c=>c.id);
+
+    // いいね総数を取得
+    if(myIds.length>0){
+      const {count:likeCount}=await sb.from('likes')
+        .select('id',{count:'exact',head:true})
+        .in('case_id',myIds);
+      const statLikes=document.getElementById('my-stat-likes');
+      if(statLikes) statLikes.textContent=likeCount||0;
+
+      // コメント総数を取得
+      const {count:cmtCount}=await sb.from('comments')
+        .select('id',{count:'exact',head:true})
+        .in('case_id',myIds);
+      const statCmts=document.getElementById('my-stat-cmts');
+      if(statCmts) statCmts.textContent=cmtCount||0;
+    } else {
+      const sl=document.getElementById('my-stat-likes');
+      const sc=document.getElementById('my-stat-cmts');
+      if(sl) sl.textContent=0;
+      if(sc) sc.textContent=0;
+    }
+
     if(data&&data.length>0){
       document.getElementById('my-stat-posts').textContent=data.length;
       mp.innerHTML=data.map(c=>{
