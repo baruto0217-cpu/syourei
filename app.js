@@ -385,7 +385,7 @@ function showPage(name,el){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   if(el) el.classList.add('on');
-  if(name==='mypage') updateMyPage();
+  if(name==='mypage') updateMyPage().catch(function(e){console.error('マイページ更新エラー:',e);});
   prevPage=name;
 }
 
@@ -1437,21 +1437,21 @@ async function updateMyPage(){
     const statCmts=document.getElementById('my-stat-cmts');
     if(statPosts) statPosts.textContent=myIds.length;
 
-    // いいね数・コメント数をDBから並行取得
-    const [likeResult, cmtResult] = await Promise.all([
-      myIds.length>0
-        ? sb.from('likes').select('id', {count:'exact'}).in('case_id', myIds)
-        : Promise.resolve({count:0, error:null}),
-      myIds.length>0
-        ? sb.from('comments').select('id', {count:'exact'}).in('case_id', myIds)
-        : Promise.resolve({count:0, error:null}),
-    ]);
-    if(likeResult.error) console.warn('いいね取得:', likeResult.error.message);
-    if(cmtResult.error) console.warn('コメント取得:', cmtResult.error.message);
-    const likeCount = likeResult.count ?? (likeResult.data||[]).length;
-    const cmtCount  = cmtResult.count  ?? (cmtResult.data ||[]).length;
-    if(statLikes) statLikes.textContent=likeCount;
-    if(statCmts)  statCmts.textContent=cmtCount;
+    // いいね数・コメント数をDBから取得（全件取得してlengthで集計）
+    if(myIds.length>0){
+      const {data:likeData, error:le}=await sb
+        .from('likes').select('case_id').in('case_id',myIds);
+      if(le) console.warn('いいね取得エラー:',le.message);
+      if(statLikes) statLikes.textContent=(likeData||[]).length;
+
+      const {data:cmtData, error:ce}=await sb
+        .from('comments').select('case_id').in('case_id',myIds);
+      if(ce) console.warn('コメント取得エラー:',ce.message);
+      if(statCmts) statCmts.textContent=(cmtData||[]).length;
+    } else {
+      if(statLikes) statLikes.textContent=0;
+      if(statCmts)  statCmts.textContent=0;
+    }
 
     if(data&&data.length>0){
       mp.innerHTML=data.map(c=>{
@@ -1470,8 +1470,8 @@ async function updateMyPage(){
       mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">まだ投稿がありません</div>';
     }
   } catch(e) {
-    console.error('マイページ取得エラー:', e.message);
-    mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">読み込みエラーが発生しました</div>';
+    console.error('マイページ取得エラー詳細:', e);
+    if(mp) mp.innerHTML='<div style="text-align:center;padding:30px;color:var(--tm);font-size:13px">読み込みエラー: '+e.message+'</div>';
   }
 }
 
