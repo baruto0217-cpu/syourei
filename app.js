@@ -560,13 +560,16 @@ async function fetchAndRenderFeed(){
           tags:d.tags||[],
         };
       });
-      // ログイン中ユーザーのいいね状態を取得してlikeSt/c.liked/c.likesに反映
-      if(currentUser){
+      // ログイン中ユーザーのいいね状態・いいね数を取得
+      if(currentUser && caseIds.length>0){
+        // 自分のいいね済みcase_id一覧
         const {data:myLikes}=await sb.from('likes')
-          .select('case_id').eq('user_id',currentUser.id);
-        const likedIds=new Set((myLikes||[]).map(l=>l.case_id));
-        // いいね数をlikesテーブルから集計
-        const {data:allLikes}=await sb.from('likes').select('case_id');
+          .select('case_id').eq('user_id',currentUser.id)
+          .in('case_id',caseIds);
+        const likedIds=new Set((myLikes||[]).map(function(l){return l.case_id;}));
+        // 全いいね数（表示中の症例のみ）
+        const {data:allLikes}=await sb.from('likes')
+          .select('case_id').in('case_id',caseIds);
         const likeCounts={};
         (allLikes||[]).forEach(function(l){
           likeCounts[l.case_id]=(likeCounts[l.case_id]||0)+1;
@@ -692,24 +695,40 @@ function setSort(s,el){
 function doSearch(q){curQ=q;renderFeed();}
 async function toggleLike(id){
   if(!currentUser){showToast('ログインが必要です');return;}
-  const c=CASES.find(x=>x.id==id);
+  const c=CASES.find(x=>x.id==id);if(!c)return;
+  const caseId=Number(id);
   const was=likeSt[id+'l']!=null?likeSt[id+'l']:c.liked;
   const newVal=!was;
   // ローカル即時更新
   likeSt[id+'l']=newVal;
   likeSt[id]=(likeSt[id]??c.likes)+(was?-1:1);
+  c.liked=newVal;
+  c.likes=likeSt[id];
   document.querySelectorAll('#lc-'+id+' .rbtn')[0]?.classList.toggle('liked',newVal);
   const el=document.getElementById('lk-'+id);if(el)el.textContent=likeSt[id];
   // Supabase保存
-  if(sb){
-    try{
-      if(newVal){
-        await sb.from('likes').insert({case_id:Number(id),user_id:currentUser.id});
-      } else {
-        await sb.from('likes').delete()
-          .eq('case_id',Number(id)).eq('user_id',currentUser.id);
+  if(!sb) return;
+  if(newVal){
+    const {error}=await sb.from('likes')
+      .insert({case_id:caseId, user_id:currentUser.id});
+    if(error){
+      console.error('いいね保存エラー:', error);
+      // 重複エラー(23505)は無視、それ以外はロールバック
+      if(!error.code||error.code!=='23505'){
+        likeSt[id+'l']=false;
+        likeSt[id]=(likeSt[id]??c.likes)-1;
+        c.liked=false; c.likes=likeSt[id];
+        document.querySelectorAll('#lc-'+id+' .rbtn')[0]?.classList.remove('liked');
+        if(el) el.textContent=likeSt[id];
+        showToast('いいね保存失敗: '+error.message);
       }
-    }catch(e){console.warn('いいね保存エラー:',e.message);}
+    }
+  } else {
+    const {error}=await sb.from('likes')
+      .delete()
+      .eq('case_id',caseId)
+      .eq('user_id',currentUser.id);
+    if(error) console.error('いいね削除エラー:', error);
   }
 }
 async function toggleBkm(id){
