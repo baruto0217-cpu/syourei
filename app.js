@@ -522,11 +522,24 @@ async function fetchAndRenderFeed(){
       (profs||[]).forEach(p=>{ profileMap[p.id]=p; });
     }
 
+    // コメント数マップ（スコープをif外に）
+    let cmtCountMap={};
     if(data && data.length>0){
+      const caseIds=data.map(d=>d.id);
+      try {
+        const {data:cmtRows}=await sb.from('comments')
+          .select('case_id')
+          .in('case_id',caseIds);
+        (cmtRows||[]).forEach(function(r){
+          cmtCountMap[r.case_id]=(cmtCountMap[r.case_id]||0)+1;
+        });
+      } catch(_){}
+
       const dbCases=data.map(d=>{
         const m=CAT_META[d.cat]||{cc:'#888',cr:'128,128,128'};
         const prof=profileMap[d.user_id]||{};
         const nick=prof.nickname||'不明';
+        const cmtCount=cmtCountMap[d.id]||0;
         return {
           ...d,
           cc:m.cc, cr:m.cr,
@@ -541,7 +554,7 @@ async function fetchAndRenderFeed(){
           avBg:prof.av_bg||'rgba(136,136,136,.2)',
           avC:prof.av_color||'#888',
           likes:0,
-          comments:[],
+          comments:new Array(cmtCount), // 件数だけ保持（中身はfetchCommentsで取得）
           liked:false,bookmarked:false,
           timepoints:d.timepoints||[],
           tags:d.tags||[],
@@ -553,12 +566,11 @@ async function fetchAndRenderFeed(){
       // 投稿が0件の場合はサンプルも消す
       CASES.splice(0, CASES.length);
     }
-    // コメント総数をDBから取得してst-cmtを更新
+    // コメント総数をst-cmtに反映（一括取得済みのデータから集計）
     try {
-      const {count:totalCmts}=await sb.from('comments')
-        .select('id',{count:'exact',head:true});
+      const totalCmts=Object.values(cmtCountMap).reduce(function(a,b){return a+b;},0);
       const stCmt=document.getElementById('st-cmt');
-      if(stCmt && totalCmts!=null) stCmt.textContent=totalCmts;
+      if(stCmt) stCmt.textContent=totalCmts;
     } catch(_){}
   } catch(e){
     console.error('Supabase取得エラー:', e.message);
