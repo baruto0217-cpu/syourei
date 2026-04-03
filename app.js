@@ -1366,29 +1366,29 @@ async function updateMyPage(){
       .order('created_at',{ascending:false});
     if(error) throw error;
 
-    // 自分の投稿IDリスト
-    const myIds=(data||[]).map(c=>c.id);
+    // 自分の投稿IDリスト（数値型に明示変換）
+    const myIds=(data||[]).map(c=>Number(c.id)).filter(Boolean);
 
-    // いいね総数・コメント数を取得（全行取得してlengthで集計）
+    // いいね数・コメント数を取得
+    const statLikes=document.getElementById('my-stat-likes');
+    const statCmts=document.getElementById('my-stat-cmts');
     if(myIds.length>0){
       // いいね数
-      const {data:likeRows}=await sb.from('likes')
+      const {data:likeRows,error:likeErr}=await sb.from('likes')
         .select('id')
         .in('case_id',myIds);
-      const statLikes=document.getElementById('my-stat-likes');
+      if(likeErr) console.warn('いいね取得エラー:',likeErr.message);
       if(statLikes) statLikes.textContent=(likeRows||[]).length;
 
-      // コメント数
-      const {data:cmtRows}=await sb.from('comments')
+      // コメント数（自分の投稿へのコメント数）
+      const {data:cmtRows,error:cmtErr}=await sb.from('comments')
         .select('id')
         .in('case_id',myIds);
-      const statCmts=document.getElementById('my-stat-cmts');
+      if(cmtErr) console.warn('コメント取得エラー:',cmtErr.message);
       if(statCmts) statCmts.textContent=(cmtRows||[]).length;
     } else {
-      const sl=document.getElementById('my-stat-likes');
-      const sc=document.getElementById('my-stat-cmts');
-      if(sl) sl.textContent=0;
-      if(sc) sc.textContent=0;
+      if(statLikes) statLikes.textContent=0;
+      if(statCmts) statCmts.textContent=0;
     }
 
     if(data&&data.length>0){
