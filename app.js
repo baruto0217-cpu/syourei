@@ -1432,34 +1432,28 @@ async function updateMyPage(){
 
     // 自分の投稿IDリスト（数値型に明示変換）
     const myIds=(data||[]).map(c=>Number(c.id)).filter(Boolean);
-
-    // いいね数・コメント数
+    const statPosts=document.getElementById('my-stat-posts');
     const statLikes=document.getElementById('my-stat-likes');
     const statCmts=document.getElementById('my-stat-cmts');
+    if(statPosts) statPosts.textContent=myIds.length;
 
-    if(myIds.length>0 && sb){
-      // いいね数（自分の投稿へのいいね）
-      const {data:likeRows,error:likeErr}=await sb
-        .from('likes').select('case_id').in('case_id',myIds);
-      if(likeErr) console.warn('いいね取得エラー:',likeErr.message);
-      if(statLikes) statLikes.textContent=(likeRows||[]).length;
-
-      // コメント数（自分の投稿へのコメント）
-      const {data:cmtRows,error:cmtErr}=await sb
-        .from('comments').select('case_id').in('case_id',myIds);
-      if(cmtErr) console.warn('コメント取得エラー:',cmtErr.message);
-      if(statCmts) statCmts.textContent=(cmtRows||[]).length;
-    } else {
-      // CASES配列から集計（DBなし時のフォールバック）
-      const myCases=CASES.filter(c=>myIds.includes(Number(c.id)));
-      const totalLikes=myCases.reduce(function(s,c){return s+(c.likes||0);},0);
-      const totalCmts=myCases.reduce(function(s,c){return s+(c.comments?c.comments.length:0);},0);
-      if(statLikes) statLikes.textContent=totalLikes;
-      if(statCmts) statCmts.textContent=totalCmts;
-    }
+    // いいね数・コメント数をDBから並行取得
+    const [likeResult, cmtResult] = await Promise.all([
+      myIds.length>0
+        ? sb.from('likes').select('id', {count:'exact'}).in('case_id', myIds)
+        : Promise.resolve({count:0, error:null}),
+      myIds.length>0
+        ? sb.from('comments').select('id', {count:'exact'}).in('case_id', myIds)
+        : Promise.resolve({count:0, error:null}),
+    ]);
+    if(likeResult.error) console.warn('いいね取得:', likeResult.error.message);
+    if(cmtResult.error) console.warn('コメント取得:', cmtResult.error.message);
+    const likeCount = likeResult.count ?? (likeResult.data||[]).length;
+    const cmtCount  = cmtResult.count  ?? (cmtResult.data ||[]).length;
+    if(statLikes) statLikes.textContent=likeCount;
+    if(statCmts)  statCmts.textContent=cmtCount;
 
     if(data&&data.length>0){
-      document.getElementById('my-stat-posts').textContent=data.length;
       mp.innerHTML=data.map(c=>{
         const em=TYPE_EM[c.type]||'📋';
         const dt=new Date(c.created_at).toLocaleDateString('ja-JP');
