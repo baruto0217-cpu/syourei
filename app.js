@@ -1369,20 +1369,21 @@ async function updateMyPage(){
     // 自分の投稿IDリスト
     const myIds=(data||[]).map(c=>c.id);
 
-    // いいね総数を取得
+    // いいね総数・コメント数を取得（全行取得してlengthで集計）
     if(myIds.length>0){
-      const {count:likeCount}=await sb.from('likes')
-        .select('id',{count:'exact',head:true})
+      // いいね数
+      const {data:likeRows}=await sb.from('likes')
+        .select('id')
         .in('case_id',myIds);
       const statLikes=document.getElementById('my-stat-likes');
-      if(statLikes) statLikes.textContent=likeCount||0;
+      if(statLikes) statLikes.textContent=(likeRows||[]).length;
 
-      // コメント総数を取得
-      const {count:cmtCount}=await sb.from('comments')
-        .select('id',{count:'exact',head:true})
+      // コメント数
+      const {data:cmtRows}=await sb.from('comments')
+        .select('id')
         .in('case_id',myIds);
       const statCmts=document.getElementById('my-stat-cmts');
-      if(statCmts) statCmts.textContent=cmtCount||0;
+      if(statCmts) statCmts.textContent=(cmtRows||[]).length;
     } else {
       const sl=document.getElementById('my-stat-likes');
       const sc=document.getElementById('my-stat-cmts');
