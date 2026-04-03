@@ -560,6 +560,24 @@ async function fetchAndRenderFeed(){
           tags:d.tags||[],
         };
       });
+      // ログイン中ユーザーのいいね状態を取得してlikeSt/c.liked/c.likesに反映
+      if(currentUser){
+        const {data:myLikes}=await sb.from('likes')
+          .select('case_id').eq('user_id',currentUser.id);
+        const likedIds=new Set((myLikes||[]).map(l=>l.case_id));
+        // いいね数をlikesテーブルから集計
+        const {data:allLikes}=await sb.from('likes').select('case_id');
+        const likeCounts={};
+        (allLikes||[]).forEach(function(l){
+          likeCounts[l.case_id]=(likeCounts[l.case_id]||0)+1;
+        });
+        dbCases.forEach(function(d){
+          d.liked=likedIds.has(d.id);
+          d.likes=likeCounts[d.id]||0;
+          likeSt[d.id+'l']=d.liked;
+          likeSt[d.id]=d.likes;
+        });
+      }
       // DBデータでCASES配列を完全上書き（サンプルを除去）
       CASES.splice(0, CASES.length, ...dbCases);
     } else if(data && data.length===0){
@@ -672,19 +690,46 @@ function setSort(s,el){
   renderFeed();
 }
 function doSearch(q){curQ=q;renderFeed();}
-function toggleLike(id){
-  const c=CASES.find(x=>x.id===id);
+async function toggleLike(id){
+  if(!currentUser){showToast('ログインが必要です');return;}
+  const c=CASES.find(x=>x.id==id);
   const was=likeSt[id+'l']!=null?likeSt[id+'l']:c.liked;
-  likeSt[id+'l']=!was;
+  const newVal=!was;
+  // ローカル即時更新
+  likeSt[id+'l']=newVal;
   likeSt[id]=(likeSt[id]??c.likes)+(was?-1:1);
-  document.querySelectorAll('#lc-'+id+' .rbtn')[0]?.classList.toggle('liked',!was);
+  document.querySelectorAll('#lc-'+id+' .rbtn')[0]?.classList.toggle('liked',newVal);
   const el=document.getElementById('lk-'+id);if(el)el.textContent=likeSt[id];
+  // Supabase保存
+  if(sb){
+    try{
+      if(newVal){
+        await sb.from('likes').insert({case_id:Number(id),user_id:currentUser.id});
+      } else {
+        await sb.from('likes').delete()
+          .eq('case_id',Number(id)).eq('user_id',currentUser.id);
+      }
+    }catch(e){console.warn('いいね保存エラー:',e.message);}
+  }
 }
-function toggleBkm(id){
-  const c=CASES.find(x=>x.id===id);
+async function toggleBkm(id){
+  if(!currentUser){showToast('ログインが必要です');return;}
+  const c=CASES.find(x=>x.id==id);
   const was=bkmSt[id]!=null?bkmSt[id]:c.bookmarked;
-  bkmSt[id]=!was;
-  document.querySelectorAll('#lc-'+id+' .rbtn')[2]?.classList.toggle('bkm',!was);
+  const newVal=!was;
+  bkmSt[id]=newVal;
+  document.querySelectorAll('#lc-'+id+' .rbtn')[2]?.classList.toggle('bkm',newVal);
+  // Supabase保存
+  if(sb){
+    try{
+      if(newVal){
+        await sb.from('bookmarks').insert({case_id:Number(id),user_id:currentUser.id});
+      } else {
+        await sb.from('bookmarks').delete()
+          .eq('case_id',Number(id)).eq('user_id',currentUser.id);
+      }
+    }catch(e){console.warn('ブックマーク保存エラー:',e.message);}
+  }
 }
 
 // ===== DETAIL =====
@@ -1369,26 +1414,29 @@ async function updateMyPage(){
     // 自分の投稿IDリスト（数値型に明示変換）
     const myIds=(data||[]).map(c=>Number(c.id)).filter(Boolean);
 
-    // いいね数・コメント数を取得
+    // いいね数・コメント数
     const statLikes=document.getElementById('my-stat-likes');
     const statCmts=document.getElementById('my-stat-cmts');
-    if(myIds.length>0){
-      // いいね数
-      const {data:likeRows,error:likeErr}=await sb.from('likes')
-        .select('id')
-        .in('case_id',myIds);
+
+    if(myIds.length>0 && sb){
+      // いいね数（自分の投稿へのいいね）
+      const {data:likeRows,error:likeErr}=await sb
+        .from('likes').select('case_id').in('case_id',myIds);
       if(likeErr) console.warn('いいね取得エラー:',likeErr.message);
       if(statLikes) statLikes.textContent=(likeRows||[]).length;
 
-      // コメント数（自分の投稿へのコメント数）
-      const {data:cmtRows,error:cmtErr}=await sb.from('comments')
-        .select('id')
-        .in('case_id',myIds);
+      // コメント数（自分の投稿へのコメント）
+      const {data:cmtRows,error:cmtErr}=await sb
+        .from('comments').select('case_id').in('case_id',myIds);
       if(cmtErr) console.warn('コメント取得エラー:',cmtErr.message);
       if(statCmts) statCmts.textContent=(cmtRows||[]).length;
     } else {
-      if(statLikes) statLikes.textContent=0;
-      if(statCmts) statCmts.textContent=0;
+      // CASES配列から集計（DBなし時のフォールバック）
+      const myCases=CASES.filter(c=>myIds.includes(Number(c.id)));
+      const totalLikes=myCases.reduce(function(s,c){return s+(c.likes||0);},0);
+      const totalCmts=myCases.reduce(function(s,c){return s+(c.comments?c.comments.length:0);},0);
+      if(statLikes) statLikes.textContent=totalLikes;
+      if(statCmts) statCmts.textContent=totalCmts;
     }
 
     if(data&&data.length>0){
