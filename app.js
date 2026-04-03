@@ -761,7 +761,7 @@ function buildDetail(id){
     var t2=CMT_TYPES[ki];
     var isActive=(curCmtType&&t2.key===curCmtType);
     var styleAttr=isActive?(' style="border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg+';opacity:1;font-weight:700"'):'';
-    cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'"'+styleAttr+' onclick="selectCmtType(\''+t2.key+'\',this)">'+t2.label+'</button>';
+    cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'" data-key="'+t2.key+'"'+styleAttr+' onclick="selectCmtType(this)">'+t2.label+'</button>';
   }
 
   // タグHTML
@@ -828,28 +828,25 @@ function buildDetail(id){
 }
 
 
-function selectCmtType(key, el){
-  const row=el?el.closest('.cmt-type-row'):null;
-  const btns=row
-    ? row.querySelectorAll('.cmt-type-btn')
-    : document.querySelectorAll('.cmt-type-btn');
+function selectCmtType(el){
+  const key=el.dataset.key;
+  const row=el.closest('.cmt-type-row');
+  const btns=row?row.querySelectorAll('.cmt-type-btn'):[];
 
-  // 同じタブを再度押したら選択解除（トグル）
+  // 同じタブを再押し → 選択解除
   if(curCmtType===key){
     curCmtType=null;
     btns.forEach(function(b){ b.classList.remove('on'); b.removeAttribute('style'); });
     return;
   }
 
-  // 別のタブを押したら切り替え
+  // 別タブ押し → 全リセットして選択
   curCmtType=key;
   btns.forEach(function(b){ b.classList.remove('on'); b.removeAttribute('style'); });
-  if(el){
-    el.classList.add('on');
-    const t=CMT_TYPES.find(function(t){return t.key===key;});
-    if(t){
-      el.style.cssText='border-color:'+t.color+';color:'+t.color+';background:'+t.bg+';opacity:1;font-weight:700';
-    }
+  el.classList.add('on');
+  const t=CMT_TYPES.find(function(t){return t.key===key;});
+  if(t){
+    el.style.cssText='border-color:'+t.color+';color:'+t.color+';background:'+t.bg+';opacity:1;font-weight:700';
   }
 }
 
@@ -888,8 +885,8 @@ async function postCmt(id){
     showToast('コメントを送信しました');
     // コメントタイプ選択を解除
     curCmtType=null;
-    const row=document.querySelector('#cmt-type-row-'+id);
-    if(row) row.querySelectorAll('.cmt-type-btn').forEach(function(b){b.classList.remove('on');b.removeAttribute('style');});
+    const typeRow=document.querySelector('#cmt-type-row-'+id);
+    if(typeRow) typeRow.querySelectorAll('.cmt-type-btn').forEach(function(b){b.classList.remove('on');b.removeAttribute('style');});
     // コメント欄を再描画
     refreshComments(id);
   } catch(e){
@@ -903,23 +900,44 @@ async function postCmt(id){
 async function fetchComments(caseId){
   if(!sb) return;
   try {
+    // commentsをまず取得（JOINなし）
     const {data,error}=await sb.from('comments')
-      .select('*, profiles(nickname,av_color,av_bg)')
+      .select('*')
       .eq('case_id',caseId)
       .order('created_at',{ascending:true});
     if(error) throw error;
+    if(!data||data.length===0){
+      const c=CASES.find(x=>x.id==caseId);
+      if(c){c.comments=[];refreshComments(caseId);}
+      return;
+    }
+
+    // user_idの一覧を取得してprofilesを別途取得
+    const uids=[...new Set(data.map(d=>d.user_id).filter(Boolean))];
+    let profMap={};
+    if(uids.length>0){
+      const {data:profs}=await sb.from('profiles')
+        .select('id,nickname,av_color,av_bg')
+        .in('id',uids);
+      (profs||[]).forEach(p=>{profMap[p.id]=p;});
+    }
+
     const c=CASES.find(x=>x.id==caseId);
-    if(c && data){
-      c.comments=data.map(d=>({
-        name:d.profiles?.nickname||'不明',
-        av:(d.profiles?.nickname||'不').slice(0,2),
-        avBg:d.profiles?.av_bg||'rgba(136,136,136,.2)',
-        avC:d.profiles?.av_color||'#888',
-        time:formatTime(d.created_at),
-        text:d.body,
-        cmt_type:d.cmt_type||'question',
-        db_id:d.id,
-      }));
+    if(c){
+      c.comments=data.map(d=>{
+        const prof=profMap[d.user_id]||{};
+        const nick=prof.nickname||'不明';
+        return {
+          name:nick,
+          av:nick.slice(0,2),
+          avBg:prof.av_bg||'rgba(136,136,136,.2)',
+          avC:prof.av_color||'#888',
+          time:formatTime(d.created_at),
+          text:d.body,
+          cmt_type:d.cmt_type||null,
+          db_id:d.id,
+        };
+      });
       refreshComments(caseId);
     }
   } catch(e){ console.warn('コメント取得エラー:', e.message); }
