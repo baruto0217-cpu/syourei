@@ -357,6 +357,12 @@ async function onAuthChange(user){
     document.getElementById('scr-login').classList.remove('active');
     document.getElementById('app').classList.add('active');
     fetchAndRenderFeed();
+    // 管理者なら通知ボタンを表示して通知を取得
+    if(isAdmin){
+      const nb=document.getElementById('notif-btn');
+      if(nb) nb.style.display='flex';
+      fetchNotifications();
+    }
   }
 }
 
@@ -1529,6 +1535,98 @@ async function adminDeleteUser(userId, nickname){
     loadAdminUsers();
   }
 }
+
+// ===== NOTIFICATIONS =====
+let notifData=[];
+
+async function fetchNotifications(){
+  if(!sb||!currentUser||!currentProfile?.is_admin) return;
+  try {
+    const {data,error}=await sb.from('notifications')
+      .select('*')
+      .eq('admin_id',currentUser.id)
+      .order('created_at',{ascending:false})
+      .limit(30);
+    if(error) throw error;
+    notifData=data||[];
+    renderNotifications();
+  } catch(e){ console.warn('通知取得エラー:',e.message); }
+}
+
+function renderNotifications(){
+  const unread=notifData.filter(n=>!n.is_read).length;
+  // バッジ更新
+  const badge=document.getElementById('notif-badge');
+  if(badge){
+    badge.textContent=unread>99?'99+':unread;
+    badge.style.display=unread>0?'flex':'none';
+  }
+  // リスト更新
+  const list=document.getElementById('notif-list');
+  if(!list) return;
+  if(notifData.length===0){
+    list.innerHTML='<div class="notif-empty">通知はありません</div>';
+    return;
+  }
+  list.innerHTML=notifData.map(function(n){
+    var icon=n.type==='new_case'?'📋':'💬';
+    var label=n.type==='new_case'?'新規投稿':'新規コメント';
+    var cls='notif-item'+(n.is_read?'':' unread');
+    return '<div class="'+cls+'" onclick="onNotifClick('+n.id+','+(n.case_id||'null')+')">'
+      +'<div class="notif-icon">'+icon+'</div>'
+      +'<div class="notif-content">'
+        +'<div class="notif-title">'+label+'</div>'
+        +'<div class="notif-body">'+n.body+'</div>'
+        +'<div class="notif-time">'+formatTime(n.created_at)+'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+async function onNotifClick(notifId, caseId){
+  // 既読にする
+  if(sb){
+    await sb.from('notifications').update({is_read:true}).eq('id',notifId);
+  }
+  const n=notifData.find(function(x){return x.id===notifId;});
+  if(n) n.is_read=true;
+  renderNotifications();
+  // 該当症例を開く
+  if(caseId){
+    toggleNotifPanel();
+    showDetailById(caseId);
+  }
+}
+
+async function markAllRead(){
+  if(!sb||!currentUser) return;
+  await sb.from('notifications')
+    .update({is_read:true})
+    .eq('admin_id',currentUser.id)
+    .eq('is_read',false);
+  notifData.forEach(function(n){ n.is_read=true; });
+  renderNotifications();
+}
+
+function toggleNotifPanel(){
+  const panel=document.getElementById('notif-panel');
+  if(!panel) return;
+  const isOpen=panel.classList.contains('open');
+  panel.classList.toggle('open');
+  // パネルを開いたら最新通知を取得
+  if(!isOpen) fetchNotifications();
+}
+
+// パネル外クリックで閉じる
+document.addEventListener('click',function(e){
+  const panel=document.getElementById('notif-panel');
+  const btn=document.getElementById('notif-btn');
+  if(panel&&btn&&panel.classList.contains('open')){
+    if(!panel.contains(e.target)&&!btn.contains(e.target)){
+      panel.classList.remove('open');
+    }
+  }
+});
 
 // ===== TOAST =====
 function showToast(msg){
