@@ -759,10 +759,9 @@ function buildDetail(id){
   var cmtTypeBtns='';
   for(var ki=0;ki<CMT_TYPES.length;ki++){
     var t2=CMT_TYPES[ki];
-    // 選択中のタイプと一致する場合（デフォルト:question）はアクティブスタイルを付ける
     var isActive=(t2.key===curCmtType);
-    var onStyle=isActive?'border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg:'';
-    cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'" onclick="selectCmtType(\''+t2.key+'\',this)" style="'+onStyle+'">'+t2.label+'</button>';
+    var styleAttr=isActive?(' style="border-color:'+t2.color+';color:'+t2.color+';background:'+t2.bg+';opacity:1;font-weight:700"'):'';
+    cmtTypeBtns+='<button class="cmt-type-btn'+(isActive?' on':'')+'"'+styleAttr+' onclick="selectCmtType(\''+t2.key+'\',this)">'+t2.label+'</button>';
   }
 
   // タグHTML
@@ -831,21 +830,22 @@ function buildDetail(id){
 
 function selectCmtType(key, el){
   curCmtType=key;
-  // 全ボタンをリセット（クラスもインラインスタイルも）
-  document.querySelectorAll('.cmt-type-btn').forEach(b=>{
+  // elの親（cmt-type-row）を起点にスコープを絞る
+  const row=el?el.closest('.cmt-type-row'):null;
+  const btns=row
+    ? row.querySelectorAll('.cmt-type-btn')
+    : document.querySelectorAll('.cmt-type-btn');
+  // 全ボタンをリセット
+  btns.forEach(function(b){
     b.classList.remove('on');
-    b.style.borderColor='';
-    b.style.color='';
-    b.style.background='';
+    b.removeAttribute('style');  // インラインスタイルを完全削除
   });
-  // 選択したボタンをアクティブに
+  // 選択ボタンをアクティブに
   if(el){
     el.classList.add('on');
-    const t=CMT_TYPES.find(t=>t.key===key);
+    const t=CMT_TYPES.find(function(t){return t.key===key;});
     if(t){
-      el.style.borderColor=t.color;
-      el.style.color=t.color;
-      el.style.background=t.bg;
+      el.style.cssText='border-color:'+t.color+';color:'+t.color+';background:'+t.bg+';opacity:1;font-weight:700';
     }
   }
 }
@@ -886,7 +886,15 @@ async function postCmt(id){
     // コメントタイプを「質問」にリセット
     curCmtType='question';
     const firstBtn=document.querySelector('#cmt-type-row-'+id+' .cmt-type-btn');
-    if(firstBtn) selectCmtType('question',firstBtn);
+    if(firstBtn){
+      // 全ボタンリセット
+      const row=firstBtn.closest('.cmt-type-row');
+      if(row) row.querySelectorAll('.cmt-type-btn').forEach(function(b){b.classList.remove('on');b.removeAttribute('style');});
+      // 最初のボタン（質問）をアクティブに
+      firstBtn.classList.add('on');
+      var t0=CMT_TYPES[0];
+      if(t0) firstBtn.style.cssText='border-color:'+t0.color+';color:'+t0.color+';background:'+t0.bg+';opacity:1;font-weight:700';
+    }
     // コメント欄を再描画
     refreshComments(id);
   } catch(e){
