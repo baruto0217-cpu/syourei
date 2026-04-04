@@ -242,6 +242,7 @@ let likeSt={},bkmSt={};
 let currentUser=null; // Supabase userオブジェクト
 let currentProfile=null; // profilesテーブルのレコード
 let isAnon=false,vitalCount=2;
+let editCaseId=null;
 let prevPage='timeline';
 
 // ===== COMMENT TYPES =====
@@ -1283,6 +1284,112 @@ function calcChars(){
   });
   document.getElementById('char-cnt').textContent=n+'文字';
 }
+
+// ===== EDIT MODE =====
+async function startEditCase(caseId){
+  let c=CASES.find(x=>x.id==caseId);
+  if(!c && sb){
+    const {data}=await sb.from('cases').select('*').eq('id',caseId).single();
+    if(data) c=data;
+  }
+  if(!c){showToast('症例データが見つかりません');return;}
+
+  // 権限チェック
+  const isOwner=currentUser&&c.user_id===currentUser.id;
+  const isAdminUser=currentProfile?.is_admin||false;
+  if(!isOwner&&!isAdminUser){showToast('編集権限がありません');return;}
+
+  editCaseId=Number(c.id);
+  resetPostForm();
+
+  // カテゴリ選択
+  document.querySelectorAll('.cat-card').forEach(function(el){
+    if(el.querySelector('.cat-name')?.textContent===c.cat) el.classList.add('on');
+  });
+
+  // 投稿タイプ選択
+  var typeVal=c.type||'';
+  document.querySelectorAll('.type-pill').forEach(function(el){
+    var t=el.textContent.replace(/\s/g,'').replace(/[^\w\u30A0-\u9FFF]/gu,'');
+    var v=typeVal.replace(/\s/g,'');
+    if(el.textContent.indexOf(typeVal)>=0||typeVal.indexOf(t)>=0) el.classList.add('on');
+  });
+
+  // テキスト入力
+  function setVal(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
+  setVal('f-chief',   c.chief||'');
+  setVal('f-prearrival',c.prearrival||'');
+  setVal('f-roles',   c.roles||'');
+  setVal('f-scene',   c.scene||'');
+  setVal('f-pmhx',    c.pmhx||'');
+  setVal('f-meds',    c.meds||'');
+  setVal('f-allergy', c.allergy||'');
+  setVal('f-worry',   c.reflect_worry||c.reflect?.worry||'');
+  setVal('f-good',    c.reflect_good||c.reflect?.good||'');
+  setVal('f-learn',   c.reflect_learn||c.reflect?.learn||'');
+
+  // タグ選択
+  var tags=c.tags||[];
+  document.querySelectorAll('.tag-chip').forEach(function(el){
+    if(tags.indexOf(el.textContent.trim())>=0) el.classList.add('on');
+  });
+
+  // タイムポイント復元
+  var tpContainer=document.getElementById('tp-cards');
+  var tps=c.timepoints||[];
+  if(tpContainer&&tps.length>0){
+    tpContainer.innerHTML=''; tpCount=0;
+    tps.forEach(function(tp,idx){
+      tpContainer.appendChild(buildTimepointCard(idx)); tpCount++;
+      var card=tpContainer.lastElementChild;
+      function si(sel,val){var el=card.querySelector(sel);if(el)el.value=val||'';}
+      si('.tp-label-inp',tp.label);
+      si('.tp-time-inp', tp.time);
+      var fi=card.querySelectorAll('.tp-find-inp');
+      var fn=tp.findings||{};
+      if(fi[0])fi[0].value=fn.consciousness||'';
+      if(fi[1])fi[1].value=fn.breathing||'';
+      if(fi[2])fi[2].value=fn.breath_sounds||'';
+      if(fi[3])fi[3].value=fn.circulation||'';
+      if(fi[4])fi[4].value=fn.skin||'';
+      if(fi[5])fi[5].value=fn.pupils||'';
+      var vi=card.querySelectorAll('.vital-inp');
+      var vt=tp.vitals||{};
+      ['bp','hr','spo2','rr','temp','bg','etco2'].forEach(function(k,i){
+        if(vi[i]&&vt[k]&&vt[k]!=='---')vi[i].value=vt[k];
+      });
+      if(fi[6])fi[6].value=tp.rhythm||'';
+      if(fi[7])fi[7].value=tp.st||'';
+      var ni=card.querySelectorAll('.tp-note-inp');
+      if(ni[0])ni[0].value=tp.obs||'';
+      if(ni[1])ni[1].value=tp.ecgNote||'';
+      if(ni[2])ni[2].value=tp.treatmentNote||'';
+      var tx=tp.treatment||[];
+      card.querySelectorAll('.tp-chip').forEach(function(chip){
+        if(tx.indexOf(chip.textContent.trim())>=0) chip.classList.add('on');
+      });
+    });
+  }
+
+  // 匿名トグル
+  isAnon=c.is_anon||false;
+  var tog=document.getElementById('anon-tog');
+  if(tog) tog.classList.toggle('on',isAnon);
+
+  // 送信ボタンのラベル変更
+  var submitBtn=document.querySelector('.submit-btn');
+  if(submitBtn) submitBtn.textContent='症例を更新する \u2192';
+
+  // 編集モードバナーを表示
+  var banner=document.getElementById('edit-mode-banner');
+  if(banner) banner.style.display='flex';
+
+  showPage('post',null);
+  window.scrollTo(0,0);
+  showToast('編集モードで開いています');
+}
+
+
 async function submitCase(){
   if(!currentUser){showToast('ログインが必要です');return;}
 
@@ -1377,20 +1484,47 @@ async function submitCase(){
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='投稿中...';}
 
   try {
-    const {data,error} = await sb.from('cases').insert(caseData).select().single();
-    if(error) throw error;
-
-    // 投稿成功 → Supabaseから最新一覧を再取得してタイムラインに反映
-    showToast('症例を投稿しました ✓');
+    if(editCaseId){
+      // 編集モード → UPDATE
+      const {error}=await sb.from('cases').update(caseData).eq('id',editCaseId);
+      if(error) throw error;
+      showToast('症例を更新しました ✓');
+    } else {
+      // 新規投稿 → INSERT
+      const {error}=await sb.from('cases').insert(caseData);
+      if(error) throw error;
+      showToast('症例を投稿しました ✓');
+    }
+    editCaseId=null;
     resetPostForm();
+    // 編集モードバナーを非表示
+    var banner=document.getElementById('edit-mode-banner');
+    if(banner) banner.style.display='none';
+    // ボタンラベルを戻す
+    if(submitBtn) submitBtn.textContent='症例を投稿する →';
     await fetchAndRenderFeed();
-    setTimeout(()=>showPage('timeline',document.querySelector('.ntab')),800);
+    setTimeout(function(){showPage('timeline',document.querySelector('.ntab'));},800);
   } catch(e){
-    showToast('投稿失敗: '+e.message);
+    showToast((editCaseId?'更新':'投稿')+'失敗: '+e.message);
     console.error('submitCase error:', e);
   } finally {
-    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='症例を投稿する →';}
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=editCaseId?'症例を更新する →':'症例を投稿する →';}
   }
+}
+
+function cancelEdit(){
+  editCaseId=null;
+  resetPostForm();
+  showPage('post',null);
+  showToast('編集をキャンセルしました');
+}
+
+function cancelEdit(){
+  editCaseId=null;
+  resetPostForm();
+  const banner=document.getElementById('edit-mode-banner');
+  if(banner) banner.style.display='none';
+  showToast('編集をキャンセルしました');
 }
 
 function resetPostForm(){
@@ -1407,6 +1541,12 @@ function resetPostForm(){
     tp.appendChild(buildTimepointCard(1));tpCount++;
     tp.appendChild(buildTimepointCard(2));tpCount++;
   }
+  // 編集モードをリセット
+  editCaseId=null;
+  const sb2=document.querySelector('.submit-btn');
+  if(sb2) sb2.textContent='症例を投稿する →';
+  const banner=document.getElementById('edit-mode-banner');
+  if(banner) banner.style.display='none';
 }
 
 // ===== MYPAGE =====
@@ -1476,13 +1616,16 @@ async function updateMyPage(){
       mp.innerHTML=data.map(c=>{
         const em=TYPE_EM[c.type]||'📋';
         const dt=new Date(c.created_at).toLocaleDateString('ja-JP');
-        return '<div class="my-post-item" onclick="showDetailById('+c.id+')">'+
-          '<div class="my-post-title">'+c.title+'</div>'+
-          '<div class="my-post-meta">'+
-            '<span>'+em+' '+c.type+'</span>'+
-            '<span>'+c.cat+'</span>'+
-            '<span>'+dt+'</span>'+
+        return '<div class="my-post-item">'+
+          '<div onclick="showDetailById('+c.id+')" style="flex:1;cursor:pointer">'+
+            '<div class="my-post-title">'+c.title+'</div>'+
+            '<div class="my-post-meta">'+
+              '<span>'+em+' '+c.type+'</span>'+
+              '<span>'+c.cat+'</span>'+
+              '<span>'+dt+'</span>'+
+            '</div>'+
           '</div>'+
+          '<button onclick="startEditCase('+c.id+')" style="flex-shrink:0;padding:5px 12px;background:rgba(66,153,225,.15);border:1px solid #4299e1;border-radius:6px;color:#90cdf4;font-size:11px;cursor:pointer;margin-left:8px">編集</button>'+
         '</div>';
       }).join('');
     } else {
@@ -1557,7 +1700,7 @@ async function adminDeleteComment(caseId, cmtIdx){
 
 function adminEditCase(){
   if(!adminCurrentCaseId) return;
-  showToast('編集機能は近日対応予定です');
+  startEditCase(adminCurrentCaseId);
 }
 
 async function loadAdminCases(){
