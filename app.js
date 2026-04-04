@@ -554,7 +554,7 @@ async function fetchAndRenderFeed(){
           avBg:prof.av_bg||'rgba(136,136,136,.2)',
           avC:prof.av_color||'#888',
           likes:0,
-          comments:new Array(cmtCount), // 件数だけ保持（中身はfetchCommentsで取得）
+          comments:[], comments_count:cmtCount,
           liked:false,bookmarked:false,
           timepoints:d.timepoints||[],
           tags:d.tags||[],
@@ -671,7 +671,7 @@ function renderFeed(){
         <div class="av-row"><div class="av" style="background:${c.avBg};color:${c.avC}">${c.av}</div><span class="av-name">${c.author}</span></div>
         <div class="reacts">
           <button class="rbtn${liked?' liked':''}" onclick="toggleLike(${c.id})">❤️ <span id="lk-${c.id}">${likes}</span></button>
-          <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments.length}</button>
+          <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments_count!=null?c.comments_count:c.comments.length}</button>
           <button class="rbtn${bkm?' bkm':''}" onclick="toggleBkm(${c.id})">🔖</button>
           ${currentProfile?.is_admin?'<button class="rbtn" onclick="adminDeleteCase('+c.id+',event)" style="color:#e53e3e" title="管理者削除">🗑</button>':''}
         </div>
@@ -742,7 +742,7 @@ async function toggleBkm(id){
   if(sb){
     try{
       if(newVal){
-        await sb.from('bookmarks').insert({case_id:Number(id),user_id:currentUser.id});
+        await sb.from('bookmarks').upsert({case_id:Number(id),user_id:currentUser.id},{onConflict:'user_id,case_id',ignoreDuplicates:true});
       } else {
         await sb.from('bookmarks').delete()
           .eq('case_id',Number(id)).eq('user_id',currentUser.id);
@@ -841,7 +841,7 @@ function buildDetail(id){
 
   // コメントHTML（初期表示・refreshCommentsで更新）
   var cmts='';
-  var comments=c.comments||[];
+  var comments=(c.comments||[]).filter(function(x){return x&&x.text;});
   for(var ci=0;ci<comments.length;ci++){
     var cm=comments[ci];
     var t=CMT_TYPES.find(function(t){return t.key===(cm.cmt_type||'question');})||CMT_TYPES[0];
