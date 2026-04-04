@@ -668,7 +668,7 @@ function renderFeed(){
         <div class="expand-hint">▼ タップして詳細（既往歴・所見・バイタル推移・ECG・振り返り）</div>
       </div>
       <div class="card-foot">
-        <div class="av-row"><div class="av" style="background:${c.avBg};color:${c.avC}">${c.av}</div><span class="av-name">${c.author}</span></div>
+        <div class="av-row"><div class="av" style="background:${c.avBg};color:${c.avC}">${c.av}</div><span class="av-name">${c.is_anon?'匿名':c.author}</span></div>
         <div class="reacts">
           <button class="rbtn${liked?' liked':''}" onclick="toggleLike(${c.id})">❤️ <span id="lk-${c.id}">${likes}</span></button>
           <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments_count!=null?c.comments_count:c.comments.length}</button>
@@ -878,7 +878,10 @@ function buildDetail(id){
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">'
       +'<span class="tbdg" style="--tbb:'+ts.bg+';--tbc:'+ts.c+';--tbbd:'+ts.bd+'">'+em+' '+c.type+'</span>'
       +'<span class="cbdg" style="background:rgba('+c.cr+',.12);color:'+c.cc+';border:1px solid rgba('+c.cr+',.28);padding:3px 9px;border-radius:20px;font-size:11px">'+c.cat+'</span>'
-      +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+comments.length+'</span>'
+      +(c.is_anon
+      ?'<span style="font-size:12px;color:var(--tm);margin-left:4px">匿名投稿</span>'
+      :'')
+    +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+comments.length+'</span>'
     +'</div>'
 
     +'<div class="det-sec">'
@@ -1358,7 +1361,7 @@ async function submitCase(){
     type, cat,
     title:   autoTitle,
     chief,
-    scene,  // 上で取得済み
+    scene,
     pmhx:    document.getElementById('f-pmhx')?.value.trim()||'',
     meds:    document.getElementById('f-meds')?.value.trim()||'',
     allergy: document.getElementById('f-allergy')?.value.trim()||'',
@@ -1367,6 +1370,7 @@ async function submitCase(){
     reflect_worry: document.getElementById('f-worry')?.value.trim()||'',
     reflect_good:  document.getElementById('f-good')?.value.trim()||'',
     reflect_learn: document.getElementById('f-learn')?.value.trim()||'',
+    is_anon: isAnon,
   };
 
   const submitBtn = document.querySelector('.submit-btn');
