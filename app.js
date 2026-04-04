@@ -1440,18 +1440,30 @@ async function updateMyPage(){
     const statCmts=document.getElementById('my-stat-cmts');
     if(statPosts) statPosts.textContent=myIds.length;
 
-    // いいね数・コメント数をDBから取得（全件取得してlengthで集計）
+    // いいね数・コメント数をDBから取得
     if(myIds.length>0){
+      // bigint型との互換性のため文字列・数値両方試す
       const {data:likeData, error:le}=await sb
         .from('likes').select('case_id').in('case_id',myIds);
-      if(le) console.warn('いいね取得エラー:',le.message);
-      if(statLikes) statLikes.textContent=(likeData||[]).length;
+      if(le){
+        console.error('いいね取得エラー詳細:',JSON.stringify(le));
+        if(statLikes) statLikes.textContent='?';
+      } else {
+        console.log('いいね取得成功:',likeData?.length,'件 myIds:',myIds);
+        if(statLikes) statLikes.textContent=(likeData||[]).length;
+      }
 
       const {data:cmtData, error:ce}=await sb
         .from('comments').select('case_id').in('case_id',myIds);
-      if(ce) console.warn('コメント取得エラー:',ce.message);
-      if(statCmts) statCmts.textContent=(cmtData||[]).length;
+      if(ce){
+        console.error('コメント取得エラー詳細:',JSON.stringify(ce));
+        if(statCmts) statCmts.textContent='?';
+      } else {
+        console.log('コメント取得成功:',cmtData?.length,'件');
+        if(statCmts) statCmts.textContent=(cmtData||[]).length;
+      }
     } else {
+      console.log('自分の投稿なし→いいね・コメント0');
       if(statLikes) statLikes.textContent=0;
       if(statCmts)  statCmts.textContent=0;
     }
@@ -1549,31 +1561,36 @@ async function loadAdminCases(){
   if(!el) return;
   el.innerHTML='<div style="color:var(--tm);padding:8px">読み込み中...</div>';
   try {
+    // casesとprofilesを別クエリで取得（JOINなし）
     const {data,error}=await sb
       .from('cases')
-      .select('id,title,type,created_at,profiles(nickname)')
+      .select('id,title,type,created_at,user_id')
       .order('created_at',{ascending:false})
       .limit(50);
     if(error) throw error;
-    if(!data||data.length===0){el.innerHTML='<div style="color:var(--tm);padding:8px">投稿なし</div>';return;}
-    el.innerHTML=data.map(c=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.title}</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">${c.profiles?.nickname||'不明'} · ${new Date(c.created_at).toLocaleDateString('ja-JP')}</div>
-        </div>
-        <button onclick="adminDeleteCaseById(${c.id})" style="padding:5px 10px;background:rgba(229,62,62,.15);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">削除</button>
-      </div>`).join('');
+    if(!data||data.length===0){
+      el.innerHTML='<div style="color:var(--tm);padding:8px">投稿なし</div>';return;
+    }
+    // nicknameを別途取得
+    const uids=[...new Set(data.map(function(d){return d.user_id;}).filter(Boolean))];
+    var nickMap={};
+    if(uids.length>0){
+      const {data:profs}=await sb.from('profiles').select('id,nickname').in('id',uids);
+      (profs||[]).forEach(function(p){nickMap[p.id]=p.nickname||'不明';});
+    }
+    el.innerHTML=data.map(function(c){
+      var nick=nickMap[c.user_id]||'不明';
+      var dt=new Date(c.created_at).toLocaleDateString('ja-JP');
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.title+'</div>'
+          +'<div style="font-size:11px;color:var(--tm);margin-top:2px">'+nick+' · '+dt+'</div>'
+        +'</div>'
+        +'<button onclick="adminDeleteCaseById('+c.id+')" style="padding:5px 10px;background:rgba(229,62,62,.15);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">削除</button>'
+      +'</div>';
+    }).join('');
   } catch(e) {
-    // フォールバック: ローカルサンプルデータを表示
-    el.innerHTML=CASES.map(c=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:var(--tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.title}</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">${c.author} · ${formatTime(c.created_at||c.time)}</div>
-        </div>
-        <button onclick="adminDeleteCase(${c.id},null)" style="padding:5px 10px;background:rgba(229,62,62,.15);border:1px solid var(--acc);border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">削除</button>
-      </div>`).join('');
+    el.innerHTML='<div style="color:var(--tm);padding:8px">エラー: '+e.message+'</div>';
   }
 }
 
