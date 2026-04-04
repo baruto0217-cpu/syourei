@@ -1071,17 +1071,20 @@ function refreshComments(caseId){
 
 // ===== POST FORM =====
 function updateAv(){
-  const val=document.getElementById('post-nick').value.trim();
-  document.getElementById('post-av').textContent=val.slice(0,2)||'?';
+  const disp=document.getElementById('post-nick-disp');
+  const val=disp?disp.textContent.trim():(currentProfile?.nickname||'');
+  const av=document.getElementById('post-av');
+  if(av) av.textContent=val.slice(0,2)||'?';
 }
 function toggleAnon(){
   isAnon=!isAnon;
   const tog=document.getElementById('anon-tog');
-  tog.classList.toggle('on',isAnon);
-  const inp=document.getElementById('post-nick');
-  inp.disabled=isAnon;
-  inp.style.opacity=isAnon?'0.4':'1';
-  document.getElementById('post-av').textContent=isAnon?'匿':(inp.value.slice(0,2)||'?');
+  if(tog) tog.classList.toggle('on',isAnon);
+  // post-nick-disp（span）の表示を切り替え
+  const disp=document.getElementById('post-nick-disp');
+  if(disp) disp.style.opacity=isAnon?'0.4':'1';
+  const av=document.getElementById('post-av');
+  if(av) av.textContent=isAnon?'匿':((currentProfile?.nickname||'').slice(0,2)||'?');
 }
 function selCat(el){
   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('on'));
