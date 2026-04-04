@@ -1485,9 +1485,13 @@ async function submitCase(){
 
   try {
     if(editCaseId){
-      // 編集モード → UPDATE
-      const {error}=await sb.from('cases').update(caseData).eq('id',editCaseId);
+      // 編集モード → UPDATE（user_idは除外してRLSエラーを防ぐ）
+      const {user_id, ...updateData}=caseData;
+      const {error}=await sb.from('cases').update(updateData).eq('id',editCaseId);
       if(error) throw error;
+      // CASES配列から旧データを削除して最新取得で置き換え
+      const oldIdx=CASES.findIndex(x=>x.id==editCaseId);
+      if(oldIdx>=0) CASES.splice(oldIdx,1);
       showToast('症例を更新しました ✓');
     } else {
       // 新規投稿 → INSERT
@@ -1495,6 +1499,7 @@ async function submitCase(){
       if(error) throw error;
       showToast('症例を投稿しました ✓');
     }
+    const savedEditId=editCaseId;
     editCaseId=null;
     resetPostForm();
     // 編集モードバナーを非表示
@@ -1502,6 +1507,7 @@ async function submitCase(){
     if(banner) banner.style.display='none';
     // ボタンラベルを戻す
     if(submitBtn) submitBtn.textContent='症例を投稿する →';
+    // DBから最新データを取得してタイムラインを更新
     await fetchAndRenderFeed();
     setTimeout(function(){showPage('timeline',document.querySelector('.ntab'));},800);
   } catch(e){
