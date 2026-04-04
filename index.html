@@ -512,6 +512,19 @@ button{cursor:pointer}
     <div id="page-post" class="page">
       <div class="post-wrap">
 
+        <!-- 編集モードバナー -->
+        <div id="edit-mode-banner" style="display:none;background:rgba(66,153,225,.15);border:1px solid #4299e1;border-radius:var(--r);padding:10px 14px;margin-bottom:16px;display:none;align-items:center;gap:10px">
+          <span style="font-size:13px;color:#90cdf4">✏️ 編集モード</span>
+          <span style="font-size:12px;color:var(--ts);flex:1">投稿内容を修正して「症例を更新する」を押してください</span>
+          <button onclick="cancelEdit()" style="font-size:12px;color:var(--tm);background:transparent;border:1px solid var(--bd);border-radius:6px;padding:4px 10px;cursor:pointer">キャンセル</button>
+        </div>
+
+        <!-- 編集モードバナー -->
+        <div id="edit-mode-banner" style="display:none;background:rgba(66,153,225,.15);border:1px solid #4299e1;border-radius:var(--r);padding:10px 14px;margin-bottom:16px;align-items:center;gap:10px">
+          <span style="font-size:13px;color:#90cdf4">&#9999;&#65039; 編集モード</span>
+          <span style="font-size:12px;color:var(--ts);flex:1">投稿内容を修正して「症例を更新する」を押してください</span>
+          <button onclick="cancelEdit()" style="font-size:12px;color:var(--tm);background:transparent;border:1px solid var(--bd);border-radius:6px;padding:4px 10px;cursor:pointer">キャンセル</button>
+        </div>
         <!-- 投稿者 -->
         <div class="nick-bar">
           <div class="nick-av" id="post-av">?</div>
