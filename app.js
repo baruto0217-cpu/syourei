@@ -301,10 +301,30 @@ async function doSignup(){
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
   const nick=document.getElementById('signup-nick').value.trim();
+  const code=document.getElementById('signup-code')?.value.trim()||'';
   hideAuthErr('signup-err');
   if(!email||!pass){showAuthErr('signup-err','必須項目を入力してください');return;}
   if(pass.length<6){showAuthErr('signup-err','パスワードは6文字以上にしてください');return;}
+  if(!code){showAuthErr('signup-err','招待コードを入力してください');return;}
+
+  // 招待コードをSupabaseで検証
   setLoading('signup-btn','signup-spinner','signup-btn-txt',true);
+  const {data:codeData,error:codeErr}=await sb
+    .from('invite_codes')
+    .select('id,code,is_active,max_uses,use_count')
+    .eq('code',code)
+    .eq('is_active',true)
+    .single();
+  if(codeErr||!codeData){
+    showAuthErr('signup-err','招待コードが正しくありません');
+    setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
+    return;
+  }
+  if(codeData.max_uses!==null&&codeData.use_count>=codeData.max_uses){
+    showAuthErr('signup-err','この招待コードは使用上限に達しています');
+    setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
+    return;
+  }
   const {data,error}=await sb.auth.signUp({
     email, password:pass,
     options:{data:{nickname:nick||email.split('@')[0]}}
@@ -314,6 +334,12 @@ async function doSignup(){
   // ニックネームをprofilesに保存（トリガーで自動生成されるが上書き）
   if(data.user && nick){
     await sb.from('profiles').upsert({id:data.user.id, nickname:nick});
+  }
+  // 招待コードの使用回数をインクリメント
+  if(codeData){
+    await sb.from('invite_codes')
+      .update({use_count:codeData.use_count+1})
+      .eq('id',codeData.id);
   }
   document.getElementById('signup-success').style.display='block';
 }
@@ -1974,6 +2000,134 @@ document.addEventListener('click',function(e){
     }
   }
 });
+
+
+// ===== INVITE CODES =====
+async function loadInviteCodes(){
+  const el=document.getElementById('admin-invite-codes');
+  if(!el||!sb) return;
+  el.innerHTML='<div style="color:var(--tm)">読み込み中...</div>';
+  try {
+    const {data,error}=await sb.from('invite_codes')
+      .select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    if(!data||data.length===0){
+      el.innerHTML='<div style="color:var(--tm)">コードなし</div>';return;
+    }
+    el.innerHTML=data.map(function(c){
+      var statusColor=c.is_active?'#48bb78':'#fc8181';
+      var statusLabel=c.is_active?'有効':'無効';
+      var usageLabel=c.max_uses!=null?(c.use_count+'/'+c.max_uses+'回'):(c.use_count+'回（無制限）');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap">'
+        +'<span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:var(--tp);letter-spacing:.08em">'+c.code+'</span>'
+        +'<span style="font-size:11px;color:'+statusColor+';border:1px solid '+statusColor+';border-radius:4px;padding:1px 6px">'+statusLabel+'</span>'
+        +'<span style="font-size:11px;color:var(--tm)">'+usageLabel+'</span>'
+        +(c.note?'<span style="font-size:11px;color:var(--ts)">'+c.note+'</span>':'')
+        +'<div style="display:flex;gap:6px;margin-left:auto">'
+          +'<button onclick="toggleInviteCode('+c.id+','+c.is_active+')" style="font-size:11px;padding:3px 10px;background:transparent;border:1px solid var(--bd);border-radius:6px;color:var(--ts);cursor:pointer">'+(c.is_active?'無効化':'有効化')+'</button>'
+          +'<button onclick="deleteInviteCode('+c.id+')" style="font-size:11px;padding:3px 10px;background:rgba(229,62,62,.1);border:1px solid var(--acc);border-radius:6px;color:#fc8181;cursor:pointer">削除</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  } catch(e){
+    el.innerHTML='<div style="color:var(--acc)">エラー: '+e.message+'</div>';
+  }
+}
+
+async function addInviteCode(){
+  if(!sb) return;
+  const code=document.getElementById('new-invite-code')?.value.trim().toUpperCase();
+  const note=document.getElementById('new-invite-note')?.value.trim();
+  if(!code){showToast('コードを入力してください');return;}
+  const {error}=await sb.from('invite_codes').insert({code,note:note||''});
+  if(error){showToast('エラー: '+error.message);return;}
+  document.getElementById('new-invite-code').value='';
+  document.getElementById('new-invite-note').value='';
+  showToast('招待コードを追加しました');
+  loadInviteCodes();
+}
+
+async function toggleInviteCode(id,currentActive){
+  if(!sb) return;
+  const {error}=await sb.from('invite_codes')
+    .update({is_active:!currentActive}).eq('id',id);
+  if(error){showToast('エラー: '+error.message);return;}
+  showToast(currentActive?'コードを無効化しました':'コードを有効化しました');
+  loadInviteCodes();
+}
+
+async function deleteInviteCode(id){
+  if(!confirm('この招待コードを削除しますか？')) return;
+  if(!sb) return;
+  const {error}=await sb.from('invite_codes').delete().eq('id',id);
+  if(error){showToast('エラー: '+error.message);return;}
+  showToast('招待コードを削除しました');
+  loadInviteCodes();
+}
+
+
+// ===== INVITE CODES =====
+async function loadInviteCodes(){
+  const el=document.getElementById('admin-invite-codes');
+  if(!el||!sb) return;
+  el.innerHTML='<div style="color:var(--tm)">読み込み中...</div>';
+  try {
+    const {data,error}=await sb.from('invite_codes')
+      .select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    if(!data||data.length===0){
+      el.innerHTML='<div style="color:var(--tm)">コードなし</div>';return;
+    }
+    el.innerHTML=data.map(function(c){
+      var statusColor=c.is_active?'#48bb78':'#fc8181';
+      var statusLabel=c.is_active?'有効':'無効';
+      var usageLabel=c.max_uses!=null?(c.use_count+'/'+c.max_uses+'回'):(c.use_count+'回（無制限）');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap">'
+        +'<span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:var(--tp);letter-spacing:.08em">'+c.code+'</span>'
+        +'<span style="font-size:11px;color:'+statusColor+';border:1px solid '+statusColor+';border-radius:4px;padding:1px 6px">'+statusLabel+'</span>'
+        +'<span style="font-size:11px;color:var(--tm)">'+usageLabel+'</span>'
+        +(c.note?'<span style="font-size:11px;color:var(--ts)">'+c.note+'</span>':'')
+        +'<div style="display:flex;gap:6px;margin-left:auto">'
+          +'<button onclick="toggleInviteCode('+c.id+','+c.is_active+')" style="font-size:11px;padding:3px 10px;background:transparent;border:1px solid var(--bd);border-radius:6px;color:var(--ts);cursor:pointer">'+(c.is_active?'無効化':'有効化')+'</button>'
+          +'<button onclick="deleteInviteCode('+c.id+')" style="font-size:11px;padding:3px 10px;background:rgba(229,62,62,.1);border:1px solid var(--acc);border-radius:6px;color:#fc8181;cursor:pointer">削除</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  } catch(e){
+    el.innerHTML='<div style="color:var(--acc)">エラー: '+e.message+'</div>';
+  }
+}
+
+async function addInviteCode(){
+  if(!sb) return;
+  const code=document.getElementById('new-invite-code')?.value.trim().toUpperCase();
+  const note=document.getElementById('new-invite-note')?.value.trim();
+  if(!code){showToast('コードを入力してください');return;}
+  const {error}=await sb.from('invite_codes').insert({code,note:note||''});
+  if(error){showToast('エラー: '+error.message);return;}
+  document.getElementById('new-invite-code').value='';
+  document.getElementById('new-invite-note').value='';
+  showToast('招待コードを追加しました');
+  loadInviteCodes();
+}
+
+async function toggleInviteCode(id,currentActive){
+  if(!sb) return;
+  const {error}=await sb.from('invite_codes')
+    .update({is_active:!currentActive}).eq('id',id);
+  if(error){showToast('エラー: '+error.message);return;}
+  showToast(currentActive?'コードを無効化しました':'コードを有効化しました');
+  loadInviteCodes();
+}
+
+async function deleteInviteCode(id){
+  if(!confirm('この招待コードを削除しますか？')) return;
+  if(!sb) return;
+  const {error}=await sb.from('invite_codes').delete().eq('id',id);
+  if(error){showToast('エラー: '+error.message);return;}
+  showToast('招待コードを削除しました');
+  loadInviteCodes();
+}
 
 // ===== TOAST =====
 function showToast(msg){
