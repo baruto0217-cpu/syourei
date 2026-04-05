@@ -397,7 +397,9 @@ button{cursor:pointer}
       <label class="login-label">パスワード（6文字以上）</label>
       <input class="login-input" type="password" id="signup-pass" placeholder="パスワードを設定" style="margin-bottom:12px"/>
       <label class="login-label">ニックネーム</label>
-      <input class="login-input" type="text" id="signup-nick" placeholder="例：田中・タナカ隊員" style="letter-spacing:.04em"/>
+      <input class="login-input" type="text" id="signup-nick" placeholder="例：田中・タナカ隊員" style="letter-spacing:.04em;margin-bottom:12px"/>
+      <label class="login-label">招待コード</label>
+      <input class="login-input" type="text" id="signup-code" placeholder="管理者から受け取ったコードを入力" style="letter-spacing:.08em"/>
       <button class="login-btn" id="signup-btn" onclick="doSignup()">
         <span id="signup-btn-txt">アカウントを作成</span>
         <div class="login-spinner" id="signup-spinner"></div>
@@ -730,12 +732,26 @@ button{cursor:pointer}
           </div>
 
           <!-- ユーザー管理 -->
-          <div style="background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden">
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;margin-bottom:14px">
             <div style="background:var(--inp);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:12px;font-weight:700;color:var(--ts);letter-spacing:.08em">ユーザー管理</span>
               <button onclick="loadAdminUsers()" style="font-size:12px;padding:5px 12px;background:transparent;border:1px solid var(--bd);border-radius:6px;color:var(--ts);cursor:pointer">更新</button>
             </div>
             <div id="admin-users" style="padding:10px 14px;font-size:13px;color:var(--tm)">「更新」を押して読み込む</div>
+          </div>
+
+          <!-- 招待コード管理 -->
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden">
+            <div style="background:var(--inp);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;font-weight:700;color:var(--ts);letter-spacing:.08em">招待コード管理</span>
+              <button onclick="loadInviteCodes()" style="font-size:12px;padding:5px 12px;background:transparent;border:1px solid var(--bd);border-radius:6px;color:var(--ts);cursor:pointer">更新</button>
+            </div>
+            <div id="admin-invite-codes" style="padding:10px 14px;font-size:13px;color:var(--tm)">「更新」を押して読み込む</div>
+            <div style="padding:10px 14px;border-top:1px solid var(--bd);display:flex;gap:8px">
+              <input type="text" id="new-invite-code" placeholder="新しいコード（例：EMS2025）" style="flex:1;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-size:12px;padding:6px 10px;outline:none"/>
+              <input type="text" id="new-invite-note" placeholder="メモ（任意）" style="flex:1;background:var(--inp);border:1px solid var(--bd);border-radius:6px;color:var(--tp);font-size:12px;padding:6px 10px;outline:none"/>
+              <button onclick="addInviteCode()" style="font-size:12px;padding:6px 14px;background:rgba(72,187,120,.15);border:1px solid #48bb78;border-radius:6px;color:#9ae6b4;cursor:pointer;white-space:nowrap">追加</button>
+            </div>
           </div>
         </div>
       </div>
