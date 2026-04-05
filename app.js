@@ -545,7 +545,13 @@ async function fetchAndRenderFeed(){
         return {
           ...d,
           cc:m.cc, cr:m.cr,
-          pt:{age:'',sex:'',place:'',transport:'',chief:d.chief||''},
+          pt:{
+            age:   (d.pt_age||'')+(d.pt_age_unit||''),
+            sex:   d.pt_sex||'',
+            place: d.pt_place||'',
+            transport: d.pt_dest||'',
+            chief: d.chief||'',
+          },
           reflect:{
             worry:d.reflect_worry||'',
             good: d.reflect_good||'',
@@ -1318,16 +1324,34 @@ async function startEditCase(caseId){
 
   // テキスト入力
   function setVal(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
-  setVal('f-chief',   c.chief||'');
+
+  // 患者情報（年齢・性別・場所・搬送先）
+  setVal('f-age',      c.pt_age||'');
+  setVal('f-chief',    c.chief||'');
   setVal('f-prearrival',c.prearrival||'');
-  setVal('f-roles',   c.roles||'');
-  setVal('f-scene',   c.scene||'');
-  setVal('f-pmhx',    c.pmhx||'');
-  setVal('f-meds',    c.meds||'');
-  setVal('f-allergy', c.allergy||'');
-  setVal('f-worry',   c.reflect_worry||c.reflect?.worry||'');
-  setVal('f-good',    c.reflect_good||c.reflect?.good||'');
-  setVal('f-learn',   c.reflect_learn||c.reflect?.learn||'');
+  setVal('f-roles',    c.roles||'');
+  setVal('f-scene',    c.scene||'');
+  setVal('f-pmhx',     c.pmhx||'');
+  setVal('f-meds',     c.meds||'');
+  setVal('f-allergy',  c.allergy||'');
+  setVal('f-worry',    c.reflect_worry||c.reflect?.worry||'');
+  setVal('f-good',     c.reflect_good||c.reflect?.good||'');
+  setVal('f-learn',    c.reflect_learn||c.reflect?.learn||'');
+
+  // セレクトボックス（年齢単位・性別・場所・搬送先）
+  function setSelect(id,val){
+    var el=document.getElementById(id);
+    if(!el||!val) return;
+    for(var i=0;i<el.options.length;i++){
+      if(el.options[i].value===val||el.options[i].text===val){
+        el.selectedIndex=i; break;
+      }
+    }
+  }
+  setSelect('f-age-unit', c.pt_age_unit||'歳');
+  setSelect('f-sex',      c.pt_sex||'');
+  setSelect('f-place',    c.pt_place||'');
+  setSelect('f-dest',     c.pt_dest||'');
 
   // タグ選択
   var tags=c.tags||[];
@@ -1464,12 +1488,21 @@ async function submitCase(){
   const tags = Array.from(document.querySelectorAll('#tag-chips .tag-chip.on'))
     .map(t=>t.textContent.trim());
 
+  const dest = document.getElementById('f-dest')?.value||'';
+
   const caseData={
     user_id: currentUser.id,
     type, cat,
     title:   autoTitle,
     chief,
     scene,
+    pt_age:      age,
+    pt_age_unit: ageU,
+    pt_sex:      sex,
+    pt_place:    place,
+    pt_dest:     dest,
+    prearrival: document.getElementById('f-prearrival')?.value.trim()||'',
+    roles:      document.getElementById('f-roles')?.value.trim()||'',
     pmhx:    document.getElementById('f-pmhx')?.value.trim()||'',
     meds:    document.getElementById('f-meds')?.value.trim()||'',
     allergy: document.getElementById('f-allergy')?.value.trim()||'',
