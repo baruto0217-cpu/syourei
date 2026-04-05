@@ -387,6 +387,7 @@ function showPage(name,el){
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   if(el) el.classList.add('on');
   if(name==='mypage') updateMyPage().catch(function(e){console.error('マイページ更新エラー:',e);});
+  if(name==='post' && !editCaseId) fullResetPost();
   prevPage=name;
 }
 
@@ -1499,37 +1500,25 @@ async function submitCase(){
       if(error) throw error;
       showToast('症例を投稿しました ✓');
     }
-    const savedEditId=editCaseId;
-    editCaseId=null;
-    resetPostForm();
-    // 編集モードバナーを非表示
-    var banner=document.getElementById('edit-mode-banner');
-    if(banner) banner.style.display='none';
-    // ボタンラベルを戻す
-    if(submitBtn) submitBtn.textContent='症例を投稿する →';
-    // DBから最新データを取得してタイムラインを更新
+    fullResetPost();
     await fetchAndRenderFeed();
     setTimeout(function(){showPage('timeline',document.querySelector('.ntab'));},800);
   } catch(e){
-    showToast((editCaseId?'更新':'投稿')+'失敗: '+e.message);
+    showToast('保存に失敗しました: '+e.message);
     console.error('submitCase error:', e);
   } finally {
-    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=editCaseId?'症例を更新する →':'症例を投稿する →';}
+    if(submitBtn){submitBtn.disabled=false;}
   }
 }
 
 function cancelEdit(){
-  editCaseId=null;
-  resetPostForm();
+  fullResetPost();
   showPage('post',null);
   showToast('編集をキャンセルしました');
 }
 
 function cancelEdit(){
-  editCaseId=null;
-  resetPostForm();
-  const banner=document.getElementById('edit-mode-banner');
-  if(banner) banner.style.display='none';
+  fullResetPost();
   showToast('編集をキャンセルしました');
 }
 
@@ -1537,7 +1526,7 @@ function resetPostForm(){
   document.querySelectorAll('.cat-card.on').forEach(e=>e.classList.remove('on'));
   document.querySelectorAll('.type-pill.on').forEach(e=>e.classList.remove('on'));
   document.querySelectorAll('.tag-chip.on,.tp-chip.on').forEach(e=>e.classList.remove('on'));
-  document.querySelectorAll('#post-wrap textarea, #post-wrap input:not([type="time"])').forEach(e=>{
+  document.querySelectorAll('.post-wrap textarea, .post-wrap input:not([type="time"])').forEach(e=>{
     if(e.tagName==='SELECT') e.selectedIndex=0; else e.value='';
   });
   // タイムポイントをリセット（3枚に戻す）
@@ -1547,8 +1536,16 @@ function resetPostForm(){
     tp.appendChild(buildTimepointCard(1));tpCount++;
     tp.appendChild(buildTimepointCard(2));tpCount++;
   }
-  // 編集モードをリセット
+  // ※ editCaseIdはここでリセットしない（startEditCaseが後でセットするため）
+}
+
+// 完全リセット（新規投稿時・キャンセル時）
+function fullResetPost(){
   editCaseId=null;
+  isAnon=false;
+  const tog=document.getElementById('anon-tog');
+  if(tog) tog.classList.remove('on');
+  resetPostForm();
   const sb2=document.querySelector('.submit-btn');
   if(sb2) sb2.textContent='症例を投稿する →';
   const banner=document.getElementById('edit-mode-banner');
