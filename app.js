@@ -892,10 +892,19 @@ function buildDetail(id){
     +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+comments.length+'</span>'
     +'</div>'
 
+
     +'<div class="det-sec">'
       +'<div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">患者情報・現場概要</div></div>'
+      +'<div class="info-grid" style="margin-bottom:10px">'
+        +'<div class="info-block"><div class="ib-lbl">年齢</div><div class="ib-val">'+((c.pt_age)?c.pt_age+(c.pt_age_unit||'歳'):(c.pt&&c.pt.age)||'—')+'</div></div>'
+        +'<div class="info-block"><div class="ib-lbl">性別</div><div class="ib-val">'+(c.pt_sex||(c.pt&&c.pt.sex)||'—')+'</div></div>'
+        +'<div class="info-block"><div class="ib-lbl">発生場所</div><div class="ib-val">'+(c.pt_place||(c.pt&&c.pt.place)||'—')+'</div></div>'
+        +'<div class="info-block"><div class="ib-lbl">搬送先</div><div class="ib-val">'+(c.pt_dest||(c.pt&&c.pt.transport)||'—')+'</div></div>'
+      +'</div>'
       +'<div class="info-full"><div class="ib-lbl">通報内容</div><div class="ib-val" style="font-weight:500">'+(c.pt&&c.pt.chief?c.pt.chief:c.chief||'')+'</div></div>'
-      +'<div class="info-full"><div class="ib-lbl">現場状況</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+(c.scene||'')+'</div></div>'
+      +((c.prearrival)?'<div class="info-full"><div class="ib-lbl">プレアライバルコール</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+c.prearrival+'</div></div>':'')
+      +((c.roles)?'<div class="info-full"><div class="ib-lbl">情報共有・役割分担</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+c.roles+'</div></div>':'')
+      +((c.scene)?'<div class="info-full"><div class="ib-lbl">現場状況の詳細</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+c.scene+'</div></div>':'')
     +'</div>'
 
     +'<div class="det-sec">'
