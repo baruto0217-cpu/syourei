@@ -622,7 +622,7 @@ function getFiltered(){
     );
   }
   if(curSort==='like') arr.sort((a,b)=>(likeSt[b.id]??b.likes)-(likeSt[a.id]??a.likes));
-  else if(curSort==='cmt') arr.sort((a,b)=>b.comments.length-a.comments.length);
+  else if(curSort==='cmt') arr.sort((a,b)=>(b.comments_count!=null?b.comments_count:b.comments.length)-(a.comments_count!=null?a.comments_count:a.comments.length));
   else arr.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   return arr;
 }
@@ -641,7 +641,7 @@ function renderFeed(){
   const stCpa=document.getElementById('st-cpa');
   if(stCpa) stCpa.textContent=cpaCount;
   // コメント総数
-  const cmtCount=CASES.reduce(function(sum,c){return sum+(c.comments?c.comments.length:0);},0);
+  const cmtCount=CASES.reduce(function(sum,c){return sum+(c.comments_count!=null?c.comments_count:(c.comments?c.comments.length:0));},0);
   const stCmt=document.getElementById('st-cmt');
   if(stCmt) stCmt.textContent=cmtCount;
   const feed=document.getElementById('feed');
@@ -889,7 +889,7 @@ function buildDetail(id){
       +(c.is_anon
       ?'<span style="font-size:12px;color:var(--tm);margin-left:4px">匿名投稿</span>'
       :'')
-    +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+comments.length+'</span>'
+    +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+(c.comments_count!=null?c.comments_count:comments.length)+'</span>'
     +'</div>'
 
 
@@ -1003,6 +1003,7 @@ async function postCmt(id){
         name:nick, av:nick.slice(0,2), avBg, avC,
         time:'たった今', text:body, cmt_type:curCmtType,
       });
+      c.comments_count=(c.comments_count||0)+1;
     }
     inp.value='';
     showToast('コメントを送信しました');
@@ -1072,6 +1073,9 @@ function refreshComments(caseId){
   const isAdmin=currentProfile?.is_admin||false;
   const box=document.getElementById('cmt-list-'+caseId);
   const cnt=document.getElementById('cmt-cnt-'+caseId);
+  // comments_countも更新
+  c.comments_count=c.comments.length;
+  c.comments_count=c.comments.length;
   if(cnt) cnt.textContent='コメント（'+c.comments.length+'件）';
   if(!box) return;
   box.innerHTML=c.comments.map((cm,ci)=>{
