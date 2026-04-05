@@ -831,7 +831,7 @@ function buildDetail(id){
           +'</div>'
           +(tp.obs?'<div style="margin-top:10px;background:var(--inp);border:1px solid var(--bd);border-radius:6px;padding:10px 12px">'
             +'<div style="font-size:10px;color:var(--tm);margin-bottom:4px">観察所見</div>'
-            +'<div style="font-size:13px;color:var(--ts);line-height:1.7">'+tp.obs+'</div>'
+            +'<div style="font-size:13px;color:var(--ts);line-height:1.7;white-space:pre-wrap;word-break:break-word">'+tp.obs+'</div>'
           +'</div>':'')
           +'<div class="tp-sub" style="--sub-c:#4299e1">バイタルサイン</div>'
           +'<div style="display:flex;gap:8px;flex-wrap:wrap">'+vtHtml+'</div>'
@@ -840,7 +840,7 @@ function buildDetail(id){
             +(tp.rhythm?'<span class="det-tag">'+tp.rhythm+'</span>':'')
             +(tp.st?'<span class="det-tag '+stCls+'">'+tp.st+'</span>':'')
           +'</div>'
-          +(tp.ecgNote?'<div style="font-size:13px;color:var(--ts);line-height:1.7">'+tp.ecgNote+'</div>':'')
+          +(tp.ecgNote?'<div style="font-size:13px;color:var(--ts);line-height:1.7;white-space:pre-wrap;word-break:break-word">'+tp.ecgNote+'</div>':'')
           +'<div class="tp-sub" style="--sub-c:#48bb78">実施処置</div>'
           +'<div>'+txHtml+'</div>'
         +'</div>'
@@ -895,14 +895,14 @@ function buildDetail(id){
     +'<div class="det-sec">'
       +'<div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">患者情報・現場概要</div></div>'
       +'<div class="info-full"><div class="ib-lbl">通報内容</div><div class="ib-val" style="font-weight:500">'+(c.pt&&c.pt.chief?c.pt.chief:c.chief||'')+'</div></div>'
-      +'<div class="info-full"><div class="ib-lbl">現場状況</div><div class="ib-val" style="line-height:1.7">'+(c.scene||'')+'</div></div>'
+      +'<div class="info-full"><div class="ib-lbl">現場状況</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+(c.scene||'')+'</div></div>'
     +'</div>'
 
     +'<div class="det-sec">'
       +'<div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">既往歴・内服薬・アレルギー</div></div>'
       +'<div class="info-grid">'
-        +'<div class="info-block"><div class="ib-lbl">既往歴</div><div class="ib-val" style="line-height:1.7">'+(c.pmhx||'')+'</div></div>'
-        +'<div class="info-block"><div class="ib-lbl">内服薬</div><div class="ib-val" style="line-height:1.7">'+(c.meds||'')+'</div></div>'
+        +'<div class="info-block"><div class="ib-lbl">既往歴</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+(c.pmhx||'')+'</div></div>'
+        +'<div class="info-block"><div class="ib-lbl">内服薬</div><div class="ib-val" style="line-height:1.7;white-space:pre-wrap;word-break:break-word">'+(c.meds||'')+'</div></div>'
         +'<div class="info-block"><div class="ib-lbl">アレルギー</div><div class="ib-val">'+(c.allergy||'')+'</div></div>'
       +'</div>'
     +'</div>'
@@ -1307,6 +1307,16 @@ async function startEditCase(caseId){
   if(!isOwner&&!isAdminUser){showToast('編集権限がありません');return;}
 
   editCaseId=Number(c.id);
+  // デバッグ：DBから取得したデータを確認
+  console.log('編集データ:', {
+    id:c.id, type:c.type, cat:c.cat,
+    chief:c.chief, scene:c.scene,
+    pt_age:c.pt_age, pt_age_unit:c.pt_age_unit,
+    pt_sex:c.pt_sex, pt_place:c.pt_place, pt_dest:c.pt_dest,
+    prearrival:c.prearrival, roles:c.roles,
+    pmhx:c.pmhx, is_anon:c.is_anon,
+    timepoints_count:(c.timepoints||[]).length
+  });
   resetPostForm();
 
   // カテゴリ選択
@@ -1432,7 +1442,14 @@ async function submitCase(){
   if(!prearrival) {showToast('プレアライバルコール内容を入力してください');return;}
   const scene = document.getElementById('f-scene')?.value.trim()||'';
   if(!scene)  {showToast('現場状況の詳細を入力してください');return;}
-
+  // 年齢バリデーション
+  const ageRaw=document.getElementById('f-age')?.value;
+  if(ageRaw!==''&&ageRaw!==undefined){
+    const ageNum=Number(ageRaw);
+    if(isNaN(ageNum)||ageNum<0){showToast('年齢は0以上の数値を入力してください');return;}
+    if(ageNum>130){showToast('年齢の値を確認してください');return;}
+  }
+  // 年齢バリデーション
   const cat  = catEl.textContent.trim();        // 例: CPA・蘇生
   const type = stripEmoji(typeEl.textContent);  // emoji除去: 悩んだ症例
 
@@ -1542,12 +1559,6 @@ async function submitCase(){
   } finally {
     if(submitBtn){submitBtn.disabled=false;}
   }
-}
-
-function cancelEdit(){
-  fullResetPost();
-  showPage('post',null);
-  showToast('編集をキャンセルしました');
 }
 
 function cancelEdit(){
