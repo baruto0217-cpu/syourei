@@ -451,7 +451,7 @@ function showPage(name,el){
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   if(el) el.classList.add('on');
   if(name==='mypage') updateMyPage().catch(function(e){console.error('マイページ更新エラー:',e);});
-  if(name==='post' && !editCaseId) fullResetPost();
+  if(name==='post' && !editCaseId){ fullResetPost(); checkDraft(); }
   prevPage=name;
 }
 
@@ -1697,6 +1697,7 @@ async function submitCase(){
       if(error) throw error;
       showToast('症例を投稿しました ✓');
     }
+    localStorage.removeItem(DRAFT_KEY); // 下書きを自動削除
     fullResetPost();
     await fetchAndRenderFeed();
     setTimeout(function(){showPage('timeline',document.querySelector('.ntab'));},800);
@@ -2237,63 +2238,170 @@ async function deleteInviteCode(id){
   loadInviteCodes();
 }
 
-// ===== TOAST =====
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2200);
+
+// ===== DRAFT =====
+const DRAFT_KEY='ems_caselog_draft';
+
+function saveDraft(){
+  // フォームの現在の入力値を全て収集
+  const draft={
+    cat: document.querySelector('.cat-card.on .cat-name')?.textContent||'',
+    type: (function(){var el=document.querySelector('.type-pill.on');return el?el.textContent.trim():'';})(),
+    age:  document.getElementById('f-age')?.value||'',
+    ageUnit: document.getElementById('f-age-unit')?.value||'歳',
+    sex:  document.getElementById('f-sex')?.value||'',
+    place: document.getElementById('f-place')?.value||'',
+    dest:  document.getElementById('f-dest')?.value||'',
+    chief: document.getElementById('f-chief')?.value||'',
+    prearrival: document.getElementById('f-prearrival')?.value||'',
+    roles: document.getElementById('f-roles')?.value||'',
+    scene: document.getElementById('f-scene')?.value||'',
+    pmhx:  document.getElementById('f-pmhx')?.value||'',
+    meds:  document.getElementById('f-meds')?.value||'',
+    allergy: document.getElementById('f-allergy')?.value||'',
+    worry: document.getElementById('f-worry')?.value||'',
+    question: document.getElementById('f-question')?.value||'',
+    good:  document.getElementById('f-good')?.value||'',
+    learn: document.getElementById('f-learn')?.value||'',
+    isAnon: isAnon,
+    tags: Array.from(document.querySelectorAll('.tag-chip.on')).map(function(t){return t.textContent.trim();}),
+    timepoints: Array.from(document.querySelectorAll('#tp-cards .tp-card')).map(function(card){
+      var fi=card.querySelectorAll('.tp-find-inp');
+      var vi=card.querySelectorAll('.vital-inp');
+      var ni=card.querySelectorAll('.tp-note-inp');
+      return {
+        label: card.querySelector('.tp-label-inp')?.value||'',
+        time:  card.querySelector('.tp-time-inp')?.value||'',
+        consciousness:fi[0]?.value||'', breathing:fi[1]?.value||'',
+        breath_sounds:fi[2]?.value||'', circulation:fi[3]?.value||'',
+        skin:fi[4]?.value||'', pupils:fi[5]?.value||'',
+        rhythm:fi[6]?.value||'', st:fi[7]?.value||'',
+        obs:ni[0]?.value||'', ecgNote:ni[1]?.value||'', treatmentNote:ni[2]?.value||'',
+        bp:vi[0]?.value||'', hr:vi[1]?.value||'',
+        spo2:vi[2]?.value||'', rr:vi[3]?.value||'',
+        temp:vi[4]?.value||'', bg:vi[5]?.value||'', etco2:vi[6]?.value||'',
+        treatment:Array.from(card.querySelectorAll('.tp-chip.on')).map(function(c){return c.textContent.trim();}),
+      };
+    }),
+    savedAt: new Date().toISOString(),
+  };
+  try{
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    showToast('下書きを保存しました 📝');
+  }catch(e){
+    showToast('下書き保存に失敗しました: '+e.message);
+  }
 }
 
-// ===== INIT =====
-async function appInit(){
-  // 初期タイムポイント3枚を生成
-  const container=document.getElementById('tp-cards');
-  if(container){
-    container.appendChild(buildTimepointCard(0)); tpCount++;
-    container.appendChild(buildTimepointCard(1)); tpCount++;
-    container.appendChild(buildTimepointCard(2)); tpCount++;
-  }
-  // Supabase SDK初期化
-  if(!window.supabase || !window.supabase.createClient){
-    console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
-    fetchAndRenderFeed();
-    return;
-  }
-  try {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } catch(e){
-    console.error('Supabase初期化失敗:', e.message);
-    fetchAndRenderFeed();
-    return;
-  }
-
-  // 認証状態の監視（sb初期化後に登録）
-  sb.auth.onAuthStateChange((event, session)=>{
-    if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
-      onAuthChange(session.user);
-    } else if(event==='SIGNED_OUT'){
-      currentUser=null; currentProfile=null;
+function checkDraft(){
+  try{
+    var d=localStorage.getItem(DRAFT_KEY);
+    if(!d) return;
+    var draft=JSON.parse(d);
+    var banner=document.getElementById('draft-banner');
+    if(banner) banner.style.display='flex';
+    // 保存日時を表示
+    if(draft.savedAt){
+      var span=banner?.querySelector('span:nth-child(2)');
+      if(span) span.textContent='下書きが保存されています（'+formatTime(draft.savedAt)+'）';
     }
-  });
+  }catch(e){}
+}
 
-  // セッション復元
-  try {
-    const statusEl=document.getElementById('sb-status');
-    if(statusEl) statusEl.textContent='✓ 接続完了';
-    const {data:{session}}=await sb.auth.getSession();
-    if(session) await onAuthChange(session.user);
-    else renderFeed();
-  } catch(e) {
-    console.warn('セッション取得失敗:', e.message);
-    const statusEl2=document.getElementById('sb-status');
-    if(statusEl2) statusEl2.textContent='⚠ 接続エラー: '+e.message;
-    fetchAndRenderFeed();
+function restoreDraft(){
+  try{
+    var d=localStorage.getItem(DRAFT_KEY);
+    if(!d) return;
+    var draft=JSON.parse(d);
+
+    // フォームをリセットしてから復元
+    resetPostForm();
+
+    // カテゴリ
+    if(draft.cat){
+      document.querySelectorAll('.cat-card').forEach(function(el){
+        if(el.querySelector('.cat-name')?.textContent===draft.cat) el.classList.add('on');
+      });
+    }
+    // 投稿タイプ
+    if(draft.type){
+      document.querySelectorAll('.type-pill').forEach(function(el){
+        if(el.textContent.trim()===draft.type) el.classList.add('on');
+      });
+    }
+    // テキスト入力
+    function sv(id,val){var el=document.getElementById(id);if(el&&val)el.value=val;}
+    sv('f-age',draft.age); sv('f-chief',draft.chief);
+    sv('f-prearrival',draft.prearrival); sv('f-roles',draft.roles);
+    sv('f-scene',draft.scene); sv('f-pmhx',draft.pmhx);
+    sv('f-meds',draft.meds); sv('f-allergy',draft.allergy);
+    sv('f-worry',draft.worry); sv('f-question',draft.question);
+    sv('f-good',draft.good); sv('f-learn',draft.learn);
+    // セレクト
+    function ss(id,val){
+      var el=document.getElementById(id);
+      if(!el||!val) return;
+      for(var i=0;i<el.options.length;i++){
+        if(el.options[i].value===val||el.options[i].text===val){el.selectedIndex=i;break;}
+      }
+    }
+    ss('f-age-unit',draft.ageUnit); ss('f-sex',draft.sex);
+    ss('f-place',draft.place); ss('f-dest',draft.dest);
+    // タグ
+    if(draft.tags&&draft.tags.length>0){
+      document.querySelectorAll('.tag-chip').forEach(function(el){
+        if(draft.tags.indexOf(el.textContent.trim())>=0) el.classList.add('on');
+      });
+    }
+    // 匿名
+    isAnon=draft.isAnon||false;
+    var tog=document.getElementById('anon-tog');
+    if(tog) tog.classList.toggle('on',isAnon);
+    // タイムポイント
+    if(draft.timepoints&&draft.timepoints.length>0){
+      var tpContainer=document.getElementById('tp-cards');
+      if(tpContainer){
+        tpContainer.innerHTML=''; tpCount=0;
+        draft.timepoints.forEach(function(tp,idx){
+          tpContainer.appendChild(buildTimepointCard(idx)); tpCount++;
+          var card=tpContainer.lastElementChild;
+          function si(sel,val){var el=card.querySelector(sel);if(el&&val)el.value=val;}
+          si('.tp-label-inp',tp.label); si('.tp-time-inp',tp.time);
+          var fi=card.querySelectorAll('.tp-find-inp');
+          if(fi[0])fi[0].value=tp.consciousness||'';
+          if(fi[1])fi[1].value=tp.breathing||'';
+          if(fi[2])fi[2].value=tp.breath_sounds||'';
+          if(fi[3])fi[3].value=tp.circulation||'';
+          if(fi[4])fi[4].value=tp.skin||'';
+          if(fi[5])fi[5].value=tp.pupils||'';
+          if(fi[6])fi[6].value=tp.rhythm||'';
+          if(fi[7])fi[7].value=tp.st||'';
+          var vi=card.querySelectorAll('.vital-inp');
+          var vkeys=['bp','hr','spo2','rr','temp','bg','etco2'];
+          vkeys.forEach(function(k,i){if(vi[i]&&tp[k])vi[i].value=tp[k];});
+          var ni=card.querySelectorAll('.tp-note-inp');
+          if(ni[0])ni[0].value=tp.obs||'';
+          if(ni[1])ni[1].value=tp.ecgNote||'';
+          if(ni[2])ni[2].value=tp.treatmentNote||'';
+          var tx=tp.treatment||[];
+          card.querySelectorAll('.tp-chip').forEach(function(chip){
+            if(tx.indexOf(chip.textContent.trim())>=0) chip.classList.add('on');
+          });
+        });
+      }
+    }
+    // バナーを非表示
+    var banner=document.getElementById('draft-banner');
+    if(banner) banner.style.display='none';
+    showToast('下書きを復元しました ✓');
+  }catch(e){
+    showToast('復元に失敗しました: '+e.message);
   }
 }
 
-// DOMContentLoaded後に初期化（SDKが確実にロードされてから）
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', appInit);
-} else {
-  appInit();
+function deleteDraft(){
+  localStorage.removeItem(DRAFT_KEY);
+  var banner=document.getElementById('draft-banner');
+  if(banner) banner.style.display='none';
+  showToast('下書きを削除しました');
 }
