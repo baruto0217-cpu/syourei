@@ -775,19 +775,8 @@ async function toggleLike(id){
   if(!sb) return;
   if(newVal){
     const {error}=await sb.from('likes')
-      .insert({case_id:caseId, user_id:currentUser.id});
-    if(error){
-      console.error('いいね保存エラー:', error);
-      // 重複エラー(23505)は無視、それ以外はロールバック
-      if(!error.code||error.code!=='23505'){
-        likeSt[id+'l']=false;
-        likeSt[id]=(likeSt[id]??c.likes)-1;
-        c.liked=false; c.likes=likeSt[id];
-        document.querySelectorAll('#lc-'+id+' .rbtn')[0]?.classList.remove('liked');
-        if(el) el.textContent=likeSt[id];
-        showToast('いいね保存失敗: '+error.message);
-      }
-    }
+      .upsert({case_id:caseId, user_id:currentUser.id},{onConflict:'user_id,case_id',ignoreDuplicates:true});
+    if(error) console.warn('いいね保存エラー:', error.message);
   } else {
     const {error}=await sb.from('likes')
       .delete()
