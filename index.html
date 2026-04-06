@@ -538,7 +538,7 @@ button{cursor:pointer}
 
         <!-- Step 1: カテゴリ -->
         <div class="post-sec">
-          <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">1 　症例カテゴリ</div><div class="sec-line"></div></div>
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:var(--acc)"></div><div class="sec-title-sm">1 　症例カテゴリ</div><div class="req" style="margin-left:6px"></div><div class="sec-line"></div></div>
           <div class="cat-grid" id="cat-grid">
             <div class="cat-card" style="--cc:#e53e3e;--cr:229,62,62" onclick="selCat(this)"><div class="cat-ic">💔</div><div><div class="cat-name">CPA・蘇生</div><div class="cat-desc">心停止・ROSC・蘇生処置</div></div><div class="cat-chk"></div></div>
             <div class="cat-card" style="--cc:#ed8936;--cr:237,137,54" onclick="selCat(this)"><div class="cat-ic">🩹</div><div><div class="cat-name">外傷・多発外傷</div><div class="cat-desc">交通外傷・転落・熱傷</div></div><div class="cat-chk"></div></div>
@@ -550,7 +550,7 @@ button{cursor:pointer}
 
         <!-- Step 2: 投稿タイプ -->
         <div class="post-sec">
-          <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">2 　症例の性質</div><div class="sec-line"></div></div>
+          <div class="sec-hdr-row"><div class="sec-bar" style="background:#4299e1"></div><div class="sec-title-sm">2 　症例の性質</div><div class="req" style="margin-left:6px"></div><div class="sec-line"></div></div>
           <div class="type-pills">
             <div class="type-pill" style="--pb:rgba(229,62,62,.1);--pbd:#e53e3e;--pc:#fc8181" onclick="selType(this)">😓 悩んだ症例</div>
             <div class="type-pill" style="--pb:rgba(237,137,54,.1);--pbd:#ed8936;--pc:#fbd38d" onclick="selType(this)">🤔 迷った症例</div>
@@ -599,7 +599,7 @@ button{cursor:pointer}
             <textarea class="form-textarea" id="f-roles" placeholder="例：隊長→指揮・気道管理、隊員A→胸骨圧迫、隊員B→AED・記録。現場到着前に役割を確認。" style="min-height:70px" oninput="calcChars()"></textarea>
           </div>
           <div class="form-group">
-            <div class="form-label">現場状況の詳細</div>
+            <div class="form-label"><div class="req"></div>現場状況の詳細</div>
             <textarea class="form-textarea" id="f-scene" placeholder="例：目撃あり・ダウンタイム約5分。バイスタンダーCPR実施中に現着。AEDはショック不適応。" style="min-height:90px" oninput="calcChars()"></textarea>
           </div>
         </div>
@@ -637,7 +637,7 @@ button{cursor:pointer}
         <div class="post-sec">
           <div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">6 　振り返り・学び</div><div class="sec-line"></div></div>
           <div class="form-group">
-            <div class="form-label"><div class="req"></div>迷った点・判断に悩んだこと</div>
+            <div class="form-label">迷った点・判断に悩んだこと</div>
             <textarea class="form-textarea" id="f-worry" placeholder="例：PEA継続中の薬剤投与タイミングが不明確だった。バイタルの変化をどう評価すればよかったか..." oninput="calcChars()"></textarea>
           </div>
           <div class="form-group">
