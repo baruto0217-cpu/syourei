@@ -975,6 +975,7 @@ function buildDetail(id){
     +'<div class="det-sec">'
       +'<div class="sec-hdr-row"><div class="sec-bar" style="background:#ed8936"></div><div class="sec-title-sm">振り返り</div></div>'
       +'<div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:var(--acc)"></div><div class="rb-lbl">迷った点・悩んだこと</div></div><div class="rb-body">'+(c.reflect&&c.reflect.worry?c.reflect.worry:c.reflect_worry||'')+'</div></div>'
+      +((c.reflect_question)?'<div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:#4299e1"></div><div class="rb-lbl">質問したいこと</div></div><div class="rb-body">'+c.reflect_question+'</div></div>':'')
       +'<div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:#48bb78"></div><div class="rb-lbl">よかった点・工夫したこと</div></div><div class="rb-body">'+(c.reflect&&c.reflect.good?c.reflect.good:c.reflect_good||'')+'</div></div>'
       +'<div class="reflect-block"><div class="rb-hdr"><div class="rb-dot" style="background:#4299e1"></div><div class="rb-lbl">次回への学び</div></div><div class="rb-body">'+(c.reflect&&c.reflect.learn?c.reflect.learn:c.reflect_learn||'')+'</div></div>'
     +'</div>'
@@ -1421,6 +1422,7 @@ async function startEditCase(caseId){
   setVal('f-meds',     c.meds||'');
   setVal('f-allergy',  c.allergy||'');
   setVal('f-worry',    c.reflect_worry||c.reflect?.worry||'');
+  setVal('f-question', c.reflect_question||'');
   setVal('f-good',     c.reflect_good||c.reflect?.good||'');
   setVal('f-learn',    c.reflect_learn||c.reflect?.learn||'');
 
@@ -1601,9 +1603,10 @@ async function submitCase(){
     allergy: document.getElementById('f-allergy')?.value.trim()||'',
     timepoints,
     tags,
-    reflect_worry: document.getElementById('f-worry')?.value.trim()||'',
-    reflect_good:  document.getElementById('f-good')?.value.trim()||'',
-    reflect_learn: document.getElementById('f-learn')?.value.trim()||'',
+    reflect_worry:    document.getElementById('f-worry')?.value.trim()||'',
+    reflect_question: document.getElementById('f-question')?.value.trim()||'',
+    reflect_good:     document.getElementById('f-good')?.value.trim()||'',
+    reflect_learn:    document.getElementById('f-learn')?.value.trim()||'',
     is_anon: isAnon,
   };
 
