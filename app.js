@@ -2418,10 +2418,12 @@ function showToast(msg){
 
 // ===== APP INIT =====
 async function appInit(){
+  console.log('appInit開始');
   const sbStatus=document.getElementById('sb-status');
 
-  // window.supabase の存在確認（SDKのUMDビルドはwindow.supabaseに展開）
+  // window.supabase の存在確認
   let sdk=window.supabase||window.Supabase;
+  console.log('SDK確認:', !!sdk, typeof window.supabase);
   if(!sdk){
     console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
     if(sbStatus) sbStatus.textContent='オフラインモード（サンプル表示）';
@@ -2431,6 +2433,7 @@ async function appInit(){
 
   try{
     sb=sdk.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase初期化完了:', !!sb);
     if(sbStatus) sbStatus.style.display='none';
 
     // 認証状態の監視
