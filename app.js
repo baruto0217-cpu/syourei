@@ -1791,13 +1791,13 @@ async function updateMyPage(){
         if(statLikes) statLikes.textContent=(likeData||[]).length;
       }
 
+      // 自分が書いたコメント数（user_idで直接取得）
       const {data:cmtData, error:ce}=await sb
-        .from('comments').select('case_id').in('case_id',myIds);
+        .from('comments').select('id').eq('user_id',currentUser.id);
       if(ce){
-        console.error('コメント取得エラー詳細:',JSON.stringify(ce));
+        console.error('コメント取得エラー:',ce.message);
         if(statCmts) statCmts.textContent='?';
       } else {
-        console.log('コメント取得成功:',cmtData?.length,'件');
         if(statCmts) statCmts.textContent=(cmtData||[]).length;
       }
     } else {
