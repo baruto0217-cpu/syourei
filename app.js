@@ -1,6 +1,6 @@
 // ===== DATA =====
 const CASES = [
-  {id:1,is_sample:true,type:'悩んだ症例',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+  {id:1,is_sample:true,type:'悩んだ症例',cat:'心停止・ROSC',cc:'#e53e3e',cr:'229,62,62',
    title:'PEA継続中の薬剤投与タイミングに迷った心停止症例',
    pt:{age:'72歳',sex:'男性',place:'自宅（居間）',transport:'救命救急センター',chief:'「主人が倒れて動かない。息をしていないかもしれない」'},
    scene:'家族が居間で倒れているのを発見し119番通報。倒れた瞬間は目撃なし。推定ダウンタイム約5分。バイスタンダーCPRは未実施。',
@@ -37,7 +37,7 @@ const CASES = [
      {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'45分前',text:'アドレナリンのタイミングは本当に悩みますよね。ROSCしたのは素晴らしいです。'}
    ],liked:false,bookmarked:false},
 
-  {id:2,is_sample:true,type:'よくできた',cat:'外傷・多発外傷',cc:'#ed8936',cr:'237,137,54',
+  {id:2,is_sample:true,type:'よくできた',cat:'外傷',cc:'#ed8936',cr:'237,137,54',
    title:'骨盤骨折・出血性ショック疑いでのLoad and Go判断',
    pt:{age:'34歳',sex:'男性',place:'国道交差点',transport:'救命救急センター（外傷）',chief:'バイクと車が衝突している。バイクの人が道路に倒れていて動かない』'},
    scene:'バイクと乗用車の正面衝突。バイク運転手が道路上に転倒。推定衝突速度60km/h。バイスタンダーが左大腿部を圧迫止血中。',
@@ -109,7 +109,7 @@ const CASES = [
      {name:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'20時間前',text:'AF＋失語はほぼ心原性ですよね。搬送先の判断は正解だと思います。後でどうなったか教えてください。'}
    ],liked:false,bookmarked:false},
 
-  {id:4,is_sample:true,type:'ヒヤリハット',cat:'小児・産科',cc:'#48bb78',cr:'72,187,120',
+  {id:4,is_sample:true,type:'ヒヤリハット',cat:'小児',cc:'#48bb78',cr:'72,187,120',
    title:'熱性けいれん後の意識回復遅延――初期評価で血糖を測定し忘れたヒヤリ',
    pt:{age:'3歳',sex:'男性',place:'自宅（リビング）',transport:'小児救急病院',chief:'「子どもが熱を出していて、突然けいれんした。今は止まったが意識がない」'},
    scene:'母親が発熱中の子どものけいれんを目撃し119番。到着時けいれんは自然終息（持続約2分）していたが意識回復が遅延していた。熱性けいれんの既往あり。',
@@ -145,7 +145,7 @@ const CASES = [
      {name:'松本 拓海',av:'松',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'1日前',text:'正直に報告してくれてありがとうございます。チーム全体の学びになります。'}
    ],liked:false,bookmarked:true},
 
-  {id:5,is_sample:true,type:'学びになった',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+  {id:5,is_sample:true,type:'学びになった',cat:'心停止・ROSC',cc:'#e53e3e',cr:'229,62,62',
    title:'バイスタンダーCPR継続中に現着・VF除細動でROSCした症例',
    pt:{age:'58歳',sex:'男性',place:'職場（会議室）',transport:'循環器専門病院（カテーテル室直行）',chief:'「会議中に同僚が突然倒れた。意識がない。AEDを持ってきてCPRをしています」'},
    scene:'会議中に突然意識を失い転倒。同僚がすぐにCPRを開始し職場のAEDを使用。バイスタンダー2回除細動後もVF継続中に救急隊が現着（119番から約6分）。',
@@ -476,11 +476,13 @@ async function showDetailById(id){
     if(error||!data) throw error||new Error('not found');
     const {data:prof}=await sb.from('profiles').select('id,nickname,av_color,av_bg').eq('id',data.user_id).single();
     const CAT_META={
-      'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
-      '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
-      '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
-      '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
-      'その他':{cc:'#9f7aea',cr:'159,122,234'},
+      '心停止・ROSC':  {cc:'#e53e3e',cr:'229,62,62'},
+      '外傷':          {cc:'#ed8936',cr:'237,137,54'},
+      '内因性疾患':    {cc:'#4299e1',cr:'66,153,225'},
+      '小児':          {cc:'#48bb78',cr:'72,187,120'},
+      '産婦人科':      {cc:'#f687b3',cr:'246,135,179'},
+      '精神':          {cc:'#9f7aea',cr:'159,122,234'},
+      'その他':        {cc:'#68d391',cr:'104,211,145'},
     };
     const m=CAT_META[data.cat]||{cc:'#888',cr:'128,128,128'};
     const nick=prof?.nickname||'不明';
@@ -562,11 +564,13 @@ async function fetchAndRenderFeed(){
     return;
   }
   const CAT_META={
-    'CPA・蘇生':{cc:'#e53e3e',cr:'229,62,62'},
-    '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
-    '内因性疾患':{cc:'#4299e1',cr:'66,153,225'},
-    '小児・産科':{cc:'#48bb78',cr:'72,187,120'},
-    'その他':{cc:'#9f7aea',cr:'159,122,234'},
+      '心停止・ROSC':  {cc:'#e53e3e',cr:'229,62,62'},
+      '外傷':          {cc:'#ed8936',cr:'237,137,54'},
+      '内因性疾患':    {cc:'#4299e1',cr:'66,153,225'},
+      '小児':          {cc:'#48bb78',cr:'72,187,120'},
+      '産婦人科':      {cc:'#f687b3',cr:'246,135,179'},
+      '精神':          {cc:'#9f7aea',cr:'159,122,234'},
+      'その他':        {cc:'#68d391',cr:'104,211,145'},
   };
   try {
     // casesとcomments数を取得
@@ -708,7 +712,7 @@ function renderFeed(){
   const stWeek=document.getElementById('st-week');
   if(stWeek) stWeek.textContent=weekCount;
   // CPA症例数
-  const cpaCount=realCases.filter(c=>c.cat==='CPA・蘇生').length;
+  const cpaCount=realCases.filter(c=>c.cat==='心停止・ROSC').length;
   const stCpa=document.getElementById('st-cpa');
   if(stCpa) stCpa.textContent=cpaCount;
   // コメント総数
@@ -1604,11 +1608,13 @@ async function submitCase(){
   const autoTitle= `【${type}】${agePart}${sexPart}${placePart} ${chief}`.slice(0,80);
 
   const CAT_META={
-    'CPA・蘇生':    {cc:'#e53e3e',cr:'229,62,62'},
-    '外傷・多発外傷':{cc:'#ed8936',cr:'237,137,54'},
-    '内因性疾患':   {cc:'#4299e1',cr:'66,153,225'},
-    '小児・産科':   {cc:'#48bb78',cr:'72,187,120'},
-    'その他':       {cc:'#9f7aea',cr:'159,122,234'},
+      '心停止・ROSC':  {cc:'#e53e3e',cr:'229,62,62'},
+      '外傷':          {cc:'#ed8936',cr:'237,137,54'},
+      '内因性疾患':    {cc:'#4299e1',cr:'66,153,225'},
+      '小児':          {cc:'#48bb78',cr:'72,187,120'},
+      '産婦人科':      {cc:'#f687b3',cr:'246,135,179'},
+      '精神':          {cc:'#9f7aea',cr:'159,122,234'},
+      'その他':        {cc:'#68d391',cr:'104,211,145'},
   };
   const meta = CAT_META[cat]||{cc:'#e53e3e',cr:'229,62,62'};
 
