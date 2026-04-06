@@ -366,19 +366,27 @@ async function doLogout(){
 async function onAuthChange(user){
   if(user){
     currentUser=user;
-    // プロフィール取得（is_admin含む）
-    let {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
-    // profilesが存在しない場合（トリガー未実行など）は自動作成
-    if(!data){
-      const nick=user.user_metadata?.nickname||user.email.split('@')[0];
-      const {data:created}=await sb.from('profiles').upsert({
-        id:user.id,
-        nickname:nick,
-        av_color:'#e53e3e',
-        av_bg:'rgba(229,62,62,.2)',
-        is_admin:false,
-      }).select().single();
-      data=created;
+    // セッション確立を待ってからprofilesを取得・作成
+    // 最大3回リトライ（新規登録直後はセッション確立が遅れる場合がある）
+    let data=null;
+    for(let retry=0;retry<3;retry++){
+      if(retry>0) await new Promise(r=>setTimeout(r,1000)); // 1秒待機
+      const {data:prof,error}=await sb.from('profiles')
+        .select('*').eq('id',user.id).single();
+      if(prof){data=prof;break;}
+      // profilesが存在しない場合は作成を試みる
+      if(!prof){
+        const nick=user.user_metadata?.nickname||user.email.split('@')[0];
+        const {data:created,error:createErr}=await sb.from('profiles').upsert({
+          id:user.id,
+          nickname:nick,
+          av_color:'#e53e3e',
+          av_bg:'rgba(229,62,62,.2)',
+          is_admin:false,
+        },{onConflict:'id'}).select().single();
+        if(created){data=created;break;}
+        console.warn('profiles作成試行'+(retry+1)+':',createErr?.message);
+      }
     }
     currentProfile=data;
     const nick=data?.nickname||user.email.split('@')[0];
