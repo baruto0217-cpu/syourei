@@ -2405,3 +2405,57 @@ function deleteDraft(){
   if(banner) banner.style.display='none';
   showToast('下書きを削除しました');
 }
+
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2800);
+}
+
+// ===== APP INIT =====
+async function appInit(){
+  // Supabase SDK読み込み待ち
+  let tries=0;
+  while(typeof supabase==='undefined' && tries<20){
+    await new Promise(r=>setTimeout(r,200));
+    tries++;
+  }
+  if(typeof supabase==='undefined'){
+    console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
+    renderFeed();
+    return;
+  }
+  try{
+    sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sbStatus=document.getElementById('sb-status');
+    if(sbStatus) sbStatus.style.display='none';
+    // 認証状態の監視
+    sb.auth.onAuthStateChange(async function(event, session){
+      const user=session?.user||null;
+      if(user){
+        await onAuthChange(user);
+      } else {
+        currentUser=null; currentProfile=null;
+        const app=document.getElementById('app');
+        const login=document.getElementById('scr-login');
+        if(app) app.classList.remove('active');
+        if(login) login.classList.add('active');
+        renderFeed();
+      }
+    });
+    // 現在のセッション確認
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){
+      renderFeed();
+    }
+  }catch(e){
+    console.error('Supabase初期化エラー:',e);
+    renderFeed();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', appInit);
