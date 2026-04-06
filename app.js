@@ -1063,8 +1063,8 @@ async function postCmt(id){
     }
     inp.value='';
     // 匿名トグルをリセット
-    cmtAnon=false;
-    const anonTog=document.getElementById('c-anon-tog-'+id);
+    cmtAnonMap[id]=false;
+    const anonTog=document.getElementById('cmt-anon-tog-'+id);
     if(anonTog) anonTog.classList.remove('on');
     showToast('コメントを送信しました');
     // コメントタイプ選択を解除
