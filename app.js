@@ -1999,14 +1999,14 @@ async function toggleAdminFlag(userId, currentIsAdmin, nickname, isSelf){
 async function adminDeleteUser(userId, nickname){
   if(!confirm('「'+nickname+'」を削除しますか？\nこのユーザーの投稿・コメントも削除されます。\nこの操作は取り消せません。')) return;
   try {
-    // profilesのレコードを削除（CASCADE設定によりauth.usersも連動）
-    const {error}=await sb.from('profiles').delete().eq('id',userId);
+    // SQL関数経由でauth.usersごと削除（security definer関数）
+    const {error}=await sb.rpc('delete_user_by_admin',{target_user_id:userId});
     if(error) throw error;
     showToast(nickname+' を削除しました');
     loadAdminUsers();
   } catch(e) {
-    // auth.usersの削除はservice_roleが必要なためprofilesのみ削除
-    showToast('プロフィールを削除しました（認証情報はSupabaseダッシュボードから削除してください）');
+    console.error('ユーザー削除エラー:', e);
+    showToast('削除エラー: '+e.message);
     loadAdminUsers();
   }
 }
