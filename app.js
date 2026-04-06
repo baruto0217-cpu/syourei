@@ -2424,7 +2424,23 @@ async function appInit(){
     if(!window.supabase){
       throw new Error('Supabase SDKが読み込まれていません');
     }
-    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 起動前に壊れた認証ロックを全てクリア
+    try{
+      Object.keys(localStorage).forEach(function(k){
+        if(k.startsWith('sb-') || k.startsWith('lock:')) localStorage.removeItem(k);
+      });
+    }catch(e){}
+
+    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth:{
+        // ロック問題を回避：localStorageの代わりにsessionStorageを使用
+        // セッションストレージはタブを閉じると消えるためロックが蓄積しない
+        storage: window.sessionStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      }
+    });
     if(sbStatus) sbStatus.style.display='none';
 
     // 認証状態の監視
