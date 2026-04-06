@@ -984,6 +984,7 @@ function buildDetail(id){
       +'<div class="comment-box">'
         +'<div id="cmt-list-'+c.id+'">'+cmts+'</div>'
         +'<div class="cmt-type-row" id="cmt-type-row-'+c.id+'">'+cmtTypeBtns+'</div>'
+        +'<div style="padding:4px 14px 2px;display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--tm)">匿名投稿</span><div class="tog" id="cmt-anon-tog-'+c.id+'" onclick="toggleCmtAnon('+c.id+',this)" style="width:28px;height:16px;border-radius:8px"><div class="tog-k"></div></div></div>'
         +'<div class="c-input-row">'
           +'<input class="c-inp" id="c-inp-'+c.id+'" placeholder="コメントを入力..."/>'
           +'<button class="c-send" id="c-send-'+c.id+'" onclick="postCmt('+c.id+')">送信</button>'
