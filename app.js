@@ -2418,22 +2418,13 @@ function showToast(msg){
 
 // ===== APP INIT =====
 async function appInit(){
-  console.log('appInit開始');
   const sbStatus=document.getElementById('sb-status');
-
-  // window.supabase の存在確認
-  let sdk=window.supabase||window.Supabase;
-  console.log('SDK確認:', !!sdk, typeof window.supabase);
-  if(!sdk){
-    console.warn('Supabase SDK未ロード。サンプルモードで起動します。');
-    if(sbStatus) sbStatus.textContent='オフラインモード（サンプル表示）';
-    renderFeed();
-    return;
-  }
-
   try{
-    sb=sdk.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('Supabase初期化完了:', !!sb);
+    // Supabase SDKはwindow.supabaseに展開される
+    if(!window.supabase){
+      throw new Error('Supabase SDKが読み込まれていません');
+    }
+    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
     // 認証状態の監視
@@ -2442,11 +2433,12 @@ async function appInit(){
       if(user){
         await onAuthChange(user);
       } else {
-        currentUser=null; currentProfile=null;
-        const app=document.getElementById('app');
-        const login=document.getElementById('scr-login');
-        if(app) app.classList.remove('active');
-        if(login) login.classList.add('active');
+        currentUser=null;
+        currentProfile=null;
+        const appEl=document.getElementById('app');
+        const loginEl=document.getElementById('scr-login');
+        if(appEl) appEl.classList.remove('active');
+        if(loginEl) loginEl.classList.add('active');
         renderFeed();
       }
     });
@@ -2457,10 +2449,17 @@ async function appInit(){
       renderFeed();
     }
   }catch(e){
-    console.error('Supabase初期化エラー:',e);
-    if(sbStatus) sbStatus.textContent='接続エラー: '+e.message;
+    console.error('Supabase初期化エラー:', e.message);
+    if(sbStatus) sbStatus.textContent='接続エラー。ページを再読み込みしてください。';
     renderFeed();
   }
 }
 
-document.addEventListener('DOMContentLoaded', appInit);
+
+// app.jsはbody末尾に配置→DOMは既に存在する
+// Supabase SDKはhead内で同期読み込み済み
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', appInit);
+} else {
+  appInit();
+}
