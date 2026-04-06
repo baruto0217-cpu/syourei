@@ -331,10 +331,9 @@ async function doSignup(){
   });
   setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
   if(error){showAuthErr('signup-err',error.message);return;}
-  // ニックネームをprofilesに保存（トリガーで自動生成されるが上書き）
-  if(data.user && nick){
-    await sb.from('profiles').upsert({id:data.user.id, nickname:nick});
-  }
+  // ニックネームはトリガーで自動生成（raw_user_meta_dataのnicknameを使用）
+  // セッション未確立のためここではprofilesへの書き込みを行わない
+
   // 招待コードの使用回数をインクリメント
   if(codeData){
     await sb.from('invite_codes')
@@ -368,7 +367,19 @@ async function onAuthChange(user){
   if(user){
     currentUser=user;
     // プロフィール取得（is_admin含む）
-    const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    let {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    // profilesが存在しない場合（トリガー未実行など）は自動作成
+    if(!data){
+      const nick=user.user_metadata?.nickname||user.email.split('@')[0];
+      const {data:created}=await sb.from('profiles').upsert({
+        id:user.id,
+        nickname:nick,
+        av_color:'#e53e3e',
+        av_bg:'rgba(229,62,62,.2)',
+        is_admin:false,
+      }).select().single();
+      data=created;
+    }
     currentProfile=data;
     const nick=data?.nickname||user.email.split('@')[0];
     const isAdmin=data?.is_admin||false;
