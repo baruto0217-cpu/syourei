@@ -1,6 +1,6 @@
 // ===== DATA =====
 const CASES = [
-  {id:1,type:'悩んだ症例',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+  {id:1,is_sample:true,type:'悩んだ症例',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
    title:'PEA継続中の薬剤投与タイミングに迷った心停止症例',
    pt:{age:'72歳',sex:'男性',place:'自宅（居間）',transport:'救命救急センター',chief:'「主人が倒れて動かない。息をしていないかもしれない」'},
    scene:'家族が居間で倒れているのを発見し119番通報。倒れた瞬間は目撃なし。推定ダウンタイム約5分。バイスタンダーCPRは未実施。',
@@ -37,7 +37,7 @@ const CASES = [
      {name:'山田 剛',av:'山',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'45分前',text:'アドレナリンのタイミングは本当に悩みますよね。ROSCしたのは素晴らしいです。'}
    ],liked:false,bookmarked:false},
 
-  {id:2,type:'よくできた',cat:'外傷・多発外傷',cc:'#ed8936',cr:'237,137,54',
+  {id:2,is_sample:true,type:'よくできた',cat:'外傷・多発外傷',cc:'#ed8936',cr:'237,137,54',
    title:'骨盤骨折・出血性ショック疑いでのLoad and Go判断',
    pt:{age:'34歳',sex:'男性',place:'国道交差点',transport:'救命救急センター（外傷）',chief:'バイクと車が衝突している。バイクの人が道路に倒れていて動かない』'},
    scene:'バイクと乗用車の正面衝突。バイク運転手が道路上に転倒。推定衝突速度60km/h。バイスタンダーが左大腿部を圧迫止血中。',
@@ -73,7 +73,7 @@ const CASES = [
      {name:'高橋 奈々',av:'高',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'3時間前',text:'現場8分は素晴らしい。日頃のチーム訓練の成果ですね。'}
    ],liked:true,bookmarked:true},
 
-  {id:3,type:'迷った症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
+  {id:3,is_sample:true,type:'迷った症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
    title:'失語症状のみ・四肢麻痺なし――TIA vs 脳梗塞の搬送先判断',
    pt:{age:'65歳',sex:'男性',place:'自宅（書斎）',transport:'脳卒中センター（総合病院）',chief:'「夫が突然しゃべれなくなった。呼びかけには反応するが言葉が出ない」'},
    scene:'妻が突然夫の発語が困難になったことに気づき119番。発症から推定15分で現着。本人は意識清明で指示には従えるが発語不能。右口角の軽度下垂あり。',
@@ -109,7 +109,7 @@ const CASES = [
      {name:'木村 誠',av:'木',avBg:'rgba(66,153,225,.2)',avC:'#4299e1',time:'20時間前',text:'AF＋失語はほぼ心原性ですよね。搬送先の判断は正解だと思います。後でどうなったか教えてください。'}
    ],liked:false,bookmarked:false},
 
-  {id:4,type:'ヒヤリハット',cat:'小児・産科',cc:'#48bb78',cr:'72,187,120',
+  {id:4,is_sample:true,type:'ヒヤリハット',cat:'小児・産科',cc:'#48bb78',cr:'72,187,120',
    title:'熱性けいれん後の意識回復遅延――初期評価で血糖を測定し忘れたヒヤリ',
    pt:{age:'3歳',sex:'男性',place:'自宅（リビング）',transport:'小児救急病院',chief:'「子どもが熱を出していて、突然けいれんした。今は止まったが意識がない」'},
    scene:'母親が発熱中の子どものけいれんを目撃し119番。到着時けいれんは自然終息（持続約2分）していたが意識回復が遅延していた。熱性けいれんの既往あり。',
@@ -145,7 +145,7 @@ const CASES = [
      {name:'松本 拓海',av:'松',avBg:'rgba(229,62,62,.2)',avC:'#e53e3e',time:'1日前',text:'正直に報告してくれてありがとうございます。チーム全体の学びになります。'}
    ],liked:false,bookmarked:true},
 
-  {id:5,type:'学びになった',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
+  {id:5,is_sample:true,type:'学びになった',cat:'CPA・蘇生',cc:'#e53e3e',cr:'229,62,62',
    title:'バイスタンダーCPR継続中に現着・VF除細動でROSCした症例',
    pt:{age:'58歳',sex:'男性',place:'職場（会議室）',transport:'循環器専門病院（カテーテル室直行）',chief:'「会議中に同僚が突然倒れた。意識がない。AEDを持ってきてCPRをしています」'},
    scene:'会議中に突然意識を失い転倒。同僚がすぐにCPRを開始し職場のAEDを使用。バイスタンダー2回除細動後もVF継続中に救急隊が現着（119番から約6分）。',
@@ -181,7 +181,7 @@ const CASES = [
      {name:'鈴木 愛',av:'鈴',avBg:'rgba(72,187,120,.2)',avC:'#48bb78',time:'2日前',text:'バイスタンダーの方のCPRが本当に命を救いましたね。市民講習の大切さを改めて感じます。'}
    ],liked:true,bookmarked:true},
 
-  {id:6,type:'悩んだ症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
+  {id:6,is_sample:true,type:'悩んだ症例',cat:'内因性疾患',cc:'#4299e1',cr:'66,153,225',
    title:'非典型的胸痛・ST変化なし――女性のACSを疑い続けた判断',
    pt:{age:'72歳',sex:'女性',place:'自宅（台所）',transport:'循環器内科（総合病院）',chief:'「母が胸が苦しいと言って座り込んでいる。顔色が悪くて冷や汗をかいている」'},
    scene:'家事中に胸部圧迫感・強い倦怠感・左肩へのひびきが出現。発症から約40分で現着。本人は「大したことない」と言うが顔色不良・冷汗あり。',
@@ -640,8 +640,8 @@ async function fetchAndRenderFeed(){
       // DBデータでCASES配列を完全上書き（サンプルを除去）
       CASES.splice(0, CASES.length, ...dbCases);
     } else if(data && data.length===0){
-      // 投稿が0件の場合はサンプルも消す
-      CASES.splice(0, CASES.length);
+      // 投稿が0件の場合はサンプルデータをそのまま表示（消さない）
+      // CASES配列はそのまま維持
     }
     // コメント総数をst-cmtに反映（一括取得済みのデータから集計）
     try {
@@ -705,6 +705,7 @@ function renderFeed(){
       v0[k]&&v0[k]!=='---'?`<div class="vi"><div class="vi-t">${l}</div><span class="vi-v ${ac(k,v0[k])}">${v0[k]}</span><span class="vi-u">${u}</span></div>`:''
     ).join('');
     return `<div class="lcard" style="--cc:${c.cc}" id="lc-${c.id}">
+      ${c.is_sample?'<div style="background:rgba(159,122,234,.15);border-bottom:1px solid rgba(159,122,234,.3);padding:4px 12px;font-size:10px;color:#9f7aea;letter-spacing:.08em;font-weight:700">📋 サンプル症例</div>':''}
       <div class="lcard-top">
         <div class="lbadges">
           <span class="tbdg" style="--tbb:${ts.bg};--tbc:${ts.c};--tbbd:${ts.bd}">${em} ${c.type}</span>
