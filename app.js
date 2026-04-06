@@ -254,6 +254,7 @@ const CMT_TYPES=[
   {key:'reflect',  label:'振り返り', color:'#fc8181', bg:'rgba(229,62,62,.15)'},
 ];
 let curCmtType=null;
+let cmtAnonMap={}; // case_idごとの匿名フラグ
 
 // ===== AUTH HELPERS =====
 function setLoading(btnId, spinnerId, txtId, loading){
@@ -1006,6 +1007,11 @@ function buildDetail(id){
 }
 
 
+function toggleCmtAnon(caseId, el){
+  const isOn=el.classList.toggle('on');
+  cmtAnonMap[caseId]=isOn;
+}
+
 function selectCmtType(el){
   const key=el.dataset.key;
   const row=el.closest('.cmt-type-row');
@@ -1040,10 +1046,12 @@ async function postCmt(id){
   const avC=currentProfile?.av_color||'#e53e3e';
   const avBg=currentProfile?.av_bg||'rgba(229,62,62,.2)';
   // cmt_typeがnull（未選択）の場合はフィールドを省略（DB側のdefault 'question'が使われる）
+  const isCmtAnon=cmtAnonMap[id]||false;
   const cmtData={
     case_id:id,
     user_id:currentUser.id,
     body,
+    is_anon:isCmtAnon,
     ...(curCmtType ? {cmt_type:curCmtType} : {}),
   };
 
@@ -1056,12 +1064,19 @@ async function postCmt(id){
     const c=CASES.find(x=>x.id==id);
     if(c){
       c.comments.push({
-        name:nick, av:nick.slice(0,2), avBg, avC,
-        time:'たった今', text:body, cmt_type:curCmtType,
+        name:isCmtAnon?'匿名':nick,
+        av:isCmtAnon?'匿':nick.slice(0,2),
+        avBg:isCmtAnon?'rgba(100,100,100,.2)':avBg,
+        avC:isCmtAnon?'#888':avC,
+        time:'たった今', text:body, cmt_type:curCmtType, is_anon:isCmtAnon,
       });
       c.comments_count=(c.comments_count||0)+1;
     }
     inp.value='';
+    // 匿名トグルをリセット
+    cmtAnon=false;
+    const anonTog=document.getElementById('c-anon-tog-'+id);
+    if(anonTog) anonTog.classList.remove('on');
     showToast('コメントを送信しました');
     // コメントタイプ選択を解除
     curCmtType=null;
@@ -1107,14 +1122,16 @@ async function fetchComments(caseId){
       c.comments=data.map(d=>{
         const prof=profMap[d.user_id]||{};
         const nick=prof.nickname||'不明';
+        const cmtIsAnon=d.is_anon||false;
         return {
-          name:nick,
-          av:nick.slice(0,2),
-          avBg:prof.av_bg||'rgba(136,136,136,.2)',
-          avC:prof.av_color||'#888',
+          name:cmtIsAnon?'匿名':nick,
+          av:cmtIsAnon?'匿':nick.slice(0,2),
+          avBg:cmtIsAnon?'rgba(100,100,100,.2)':(prof.av_bg||'rgba(136,136,136,.2)'),
+          avC:cmtIsAnon?'#888':(prof.av_color||'#888'),
           time:formatTime(d.created_at),
           text:d.body,
           cmt_type:d.cmt_type||null,
+          is_anon:cmtIsAnon,
           db_id:d.id,
         };
       });
