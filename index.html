@@ -105,7 +105,7 @@ button{cursor:pointer}
 .sec-line{flex:1;height:1px;background:var(--bd)}
 
 .form-label{font-size:12px;font-weight:500;color:var(--ts);margin-bottom:6px;display:flex;align-items:center;gap:5px;letter-spacing:.03em}
-.req{display:inline-flex;align-items:center;background:rgba(229,62,62,.15);border:1px solid rgba(229,62,62,.4);color:var(--acc);font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.req{display:inline-flex;align-items:center;background:rgba(229,62,62,.2);border:1px solid rgba(229,62,62,.6);color:var(--acc);font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
 .req::before{content:'必須'}
 .form-input,.form-select,.form-textarea{width:100%;background:var(--inp);border:1px solid var(--bd);border-radius:var(--r);color:var(--tp);font-size:14px;padding:10px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
 .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--acc)}
@@ -649,7 +649,7 @@ button{cursor:pointer}
             <textarea class="form-textarea" id="f-good" placeholder="例：チームで役割分担を明確にしたことでスムーズに処置できた。" oninput="calcChars()"></textarea>
           </div>
           <div class="form-group">
-            <div class="form-label">次回に活かしたいこと・学びのポイント</div>
+            <div class="form-label"><div class="req"></div>次回に活かしたいこと・学びのポイント</div>
             <textarea class="form-textarea" id="f-learn" placeholder="例：CPA症例では4H4Tの系統的評価をチェックリストで確認する。" oninput="calcChars()"></textarea>
           </div>
         </div>
