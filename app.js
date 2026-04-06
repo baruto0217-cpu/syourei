@@ -1570,6 +1570,10 @@ async function submitCase(){
   if(!scene){
     scrollToRequired(document.getElementById('f-scene'),'現場状況の詳細を入力してください');return;
   }
+  const learn=document.getElementById('f-learn')?.value.trim()||'';
+  if(!learn){
+    scrollToRequired(document.getElementById('f-learn'),'次回に活かしたいこと・学びのポイントを入力してください');return;
+  }
   // 年齢バリデーション
   const cat  = catEl.textContent.trim();        // 例: CPA・蘇生
   const type = stripEmoji(typeEl.textContent);  // emoji除去: 悩んだ症例
