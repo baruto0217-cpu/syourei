@@ -305,7 +305,7 @@ async function doSignup(){
   const code=document.getElementById('signup-code')?.value.trim()||'';
   hideAuthErr('signup-err');
   if(!email||!pass){showAuthErr('signup-err','必須項目を入力してください');return;}
-  if(pass.length<8){showAuthErr('signup-err','パスワードは8文字以上にしてください');return;}
+  if(pass.length<6){showAuthErr('signup-err','パスワードは6文字以上にしてください');return;}
   if(!code){showAuthErr('signup-err','招待コードを入力してください');return;}
 
   // 招待コードをSupabaseで検証
@@ -338,7 +338,7 @@ async function doSignup(){
     // 422エラーの場合は日本語でわかりやすく表示
     let msg=error.message;
     if(error.status===422||msg.includes('Password')||msg.includes('password')){
-      msg='パスワードが要件を満たしていません。8文字以上で英字・数字を含めてください。';
+      msg='パスワードは6文字以上で入力してください。';
     } else if(msg.includes('Email')||msg.includes('email')){
       msg='メールアドレスの形式が正しくありません。';
     } else if(msg.includes('already registered')||msg.includes('already exists')){
