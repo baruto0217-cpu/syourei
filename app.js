@@ -1503,6 +1503,29 @@ async function startEditCase(caseId){
 }
 
 
+// 必須項目エラー時にスクロール＆ハイライト
+function scrollToRequired(el, msg){
+  if(el){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.style.transition='box-shadow .2s';
+    el.style.boxShadow='0 0 0 2px var(--acc)';
+    setTimeout(function(){el.style.boxShadow='';},2000);
+  }
+  showToast(msg);
+}
+
+// 必須項目エラー時にスクロール＆ハイライト
+function scrollToRequired(el, msg){
+  if(el){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.style.transition='box-shadow .3s';
+    el.style.boxShadow='0 0 0 2px var(--acc)';
+    setTimeout(function(){el.style.boxShadow='';el.style.transition='';},2000);
+    if(el.focus) el.focus();
+  }
+  showToast(msg);
+}
+
 async function submitCase(){
   if(!currentUser){showToast('ログインが必要です');return;}
 
@@ -1514,18 +1537,38 @@ async function submitCase(){
   const prearrival = document.getElementById('f-prearrival')?.value.trim()||'';
   const catEl  = document.querySelector('.cat-card.on .cat-name');
   const typeEl = document.querySelector('.type-pill.on');
-  if(!catEl)      {showToast('症例カテゴリを選択してください');return;}
-  if(!typeEl)     {showToast('症例の性質を選択してください');return;}
-  if(!chief)      {showToast('通報内容を入力してください');return;}
-  if(!prearrival) {showToast('プレアライバルコール内容を入力してください');return;}
-  const scene = document.getElementById('f-scene')?.value.trim()||'';
-  if(!scene)  {showToast('現場状況の詳細を入力してください');return;}
-  // 年齢バリデーション
+  if(!catEl){
+    scrollToRequired(document.getElementById('cat-grid'),'症例カテゴリを選択してください');return;
+  }
+  if(!typeEl){
+    scrollToRequired(document.querySelector('.type-pills'),'症例の性質を選択してください');return;
+  }
+  // 年齢バリデーション（必須）
   const ageRaw=document.getElementById('f-age')?.value;
-  if(ageRaw!==''&&ageRaw!==undefined){
-    const ageNum=Number(ageRaw);
-    if(isNaN(ageNum)||ageNum<0){showToast('年齢は0以上の数値を入力してください');return;}
-    if(ageNum>130){showToast('年齢の値を確認してください');return;}
+  if(!ageRaw&&ageRaw!=='0'){
+    scrollToRequired(document.getElementById('f-age'),'年齢を入力してください');return;
+  }
+  const ageNum=Number(ageRaw);
+  if(isNaN(ageNum)||ageNum<0){
+    scrollToRequired(document.getElementById('f-age'),'年齢は0以上の数値を入力してください');return;
+  }
+  if(ageNum>130){
+    scrollToRequired(document.getElementById('f-age'),'年齢の値を確認してください');return;
+  }
+  // 性別バリデーション（必須）
+  const sexVal=document.getElementById('f-sex')?.value||'';
+  if(!sexVal||sexVal==='選択...'){
+    scrollToRequired(document.getElementById('f-sex'),'性別を選択してください');return;
+  }
+  if(!chief){
+    scrollToRequired(document.getElementById('f-chief'),'通報内容を入力してください');return;
+  }
+  if(!prearrival){
+    scrollToRequired(document.getElementById('f-prearrival'),'プレアライバルコール内容を入力してください');return;
+  }
+  const scene = document.getElementById('f-scene')?.value.trim()||'';
+  if(!scene){
+    scrollToRequired(document.getElementById('f-scene'),'現場状況の詳細を入力してください');return;
   }
   // 年齢バリデーション
   const cat  = catEl.textContent.trim();        // 例: CPA・蘇生
