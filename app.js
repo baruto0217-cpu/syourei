@@ -637,8 +637,10 @@ async function fetchAndRenderFeed(){
           likeSt[d.id]=d.likes;
         });
       }
-      // DBデータでCASES配列を完全上書き（サンプルを除去）
-      CASES.splice(0, CASES.length, ...dbCases);
+      // サンプルデータを残してDBデータを後ろに追加
+      // まずサンプルデータのみ残す
+      const samples=CASES.filter(function(c){return c.is_sample;});
+      CASES.splice(0, CASES.length, ...samples, ...dbCases);
     } else if(data && data.length===0){
       // 投稿が0件の場合はサンプルデータをそのまま表示（消さない）
       // CASES配列はそのまま維持
@@ -672,24 +674,29 @@ function getFiltered(){
   if(curSort==='like') arr.sort((a,b)=>(likeSt[b.id]??b.likes)-(likeSt[a.id]??a.likes));
   else if(curSort==='cmt') arr.sort((a,b)=>(b.comments_count!=null?b.comments_count:b.comments.length)-(a.comments_count!=null?a.comments_count:a.comments.length));
   else arr.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  arr.sort(function(a,b){return (a.is_sample?1:0)-(b.is_sample?1:0);});
+  // サンプルを常に末尾に
+  arr.sort(function(a,b){return (a.is_sample?1:0)-(b.is_sample?1:0);});
   return arr;
 }
 
 function renderFeed(){
   const arr=getFiltered();
-  document.getElementById('cnt-lbl').textContent=arr.length+'件表示中';
-  document.getElementById('st-total').textContent=CASES.length;
+  const realArr=arr.filter(function(c){return !c.is_sample;});
+  document.getElementById('cnt-lbl').textContent=realArr.length+'件表示中';
+  const realCases=CASES.filter(function(c){return !c.is_sample;});
+  document.getElementById('st-total').textContent=realCases.length;
   // 今週の投稿数
   const oneWeekAgo=new Date(Date.now()-7*24*60*60*1000);
-  const weekCount=CASES.filter(c=>c.created_at&&new Date(c.created_at)>oneWeekAgo).length;
+  const weekCount=realCases.filter(c=>c.created_at&&new Date(c.created_at)>oneWeekAgo).length;
   const stWeek=document.getElementById('st-week');
   if(stWeek) stWeek.textContent=weekCount;
   // CPA症例数
-  const cpaCount=CASES.filter(c=>c.cat==='CPA・蘇生').length;
+  const cpaCount=realCases.filter(c=>c.cat==='CPA・蘇生').length;
   const stCpa=document.getElementById('st-cpa');
   if(stCpa) stCpa.textContent=cpaCount;
   // コメント総数
-  const cmtCount=CASES.reduce(function(sum,c){return sum+(c.comments_count!=null?c.comments_count:(c.comments?c.comments.length:0));},0);
+  const cmtCount=realCases.reduce(function(sum,c){return sum+(c.comments_count!=null?c.comments_count:(c.comments?c.comments.length:0));},0);
   const stCmt=document.getElementById('st-cmt');
   if(stCmt) stCmt.textContent=cmtCount;
   const feed=document.getElementById('feed');
