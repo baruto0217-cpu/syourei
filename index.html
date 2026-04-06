@@ -242,6 +242,7 @@ button{cursor:pointer}
 .nick-inp::placeholder{color:var(--tm)}
 .anon-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts)}
 .tog{width:32px;height:18px;border-radius:9px;background:var(--bd);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog.tog-sm{width:26px;height:15px;border-radius:8px}
 .tog.on{background:var(--acc)}
 .tog-k{width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s}
 .tog.on .tog-k{left:16px}
@@ -638,6 +639,10 @@ button{cursor:pointer}
           <div class="form-group">
             <div class="form-label"><div class="req"></div>迷った点・判断に悩んだこと</div>
             <textarea class="form-textarea" id="f-worry" placeholder="例：PEA継続中の薬剤投与タイミングが不明確だった。バイタルの変化をどう評価すればよかったか..." oninput="calcChars()"></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">質問したいこと</div>
+            <textarea class="form-textarea" id="f-question" placeholder="例：アドレナリン投与のタイミングについてアドバイスをもらいたい。搬送先の選定基準を教えてほしい。" oninput="calcChars()"></textarea>
           </div>
           <div class="form-group">
             <div class="form-label">よかった点・工夫したこと</div>
