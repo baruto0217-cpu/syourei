@@ -327,7 +327,10 @@ async function doSignup(){
   }
   const {data,error}=await sb.auth.signUp({
     email, password:pass,
-    options:{data:{nickname:nick||email.split('@')[0]}}
+    options:{
+      data:{nickname:nick||email.split('@')[0]},
+      emailRedirectTo: window.location.origin+window.location.pathname,
+    }
   });
   setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
   if(error){showAuthErr('signup-err',error.message);return;}
@@ -1882,7 +1885,7 @@ async function loadAdminUsers(){
       const adminBadge=u.is_admin?'<span style="background:#e53e3e;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">ADMIN</span>':'';
       const selfLabel=isSelf?'<span style="font-size:11px;color:var(--tm);padding:5px 4px">（自分）</span>':'';
       const delBtn=isSelf?''
-        :'<button data-uid="'+u.id+'" onclick="handleUserDelete(this)"'
+        :'<button onclick="adminDeleteUser(\''+u.id+'\',\''+u.nickname+'\')" '
         +' style="padding:5px 10px;background:rgba(229,62,62,.12);border:1px solid #e53e3e;border-radius:6px;color:#fc8181;font-size:11px;cursor:pointer;white-space:nowrap">削除</button>';
       return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)">'
         +'<div style="width:32px;height:32px;border-radius:50%;background:'+avBg+';border:1.5px solid '+avC+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+avC+';flex-shrink:0">'+nick.slice(0,2)+'</div>'
@@ -1891,7 +1894,7 @@ async function loadAdminUsers(){
         +'<div style="font-size:11px;color:var(--tm);margin-top:1px">'+regDate+' 登録</div>'
         +'</div>'
         +'<div style="display:flex;gap:6px;flex-shrink:0">'
-        +'<button data-uid="'+u.id+'" data-admin="'+u.is_admin+'" onclick="handleAdminToggle(this)"'
+        +'<button onclick="toggleAdminFlag(\''+u.id+'\','+u.is_admin+',\''+u.nickname+'\','+isSelf+')"'
         +' style="padding:5px 10px;background:'+adminBg+';border:1px solid '+adminBd+';border-radius:6px;color:'+adminCol+';font-size:11px;cursor:pointer;white-space:nowrap">'+adminLabel+'</button>'
         +selfLabel+delBtn
         +'</div></div>';
