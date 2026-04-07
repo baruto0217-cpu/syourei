@@ -2441,37 +2441,44 @@ async function appInit(){
       throw new Error('Supabase SDK未ロード');
     }
 
-    // シンプルな初期化（SDKを@2.45.4に固定済みのためロック問題なし）
+    // lock:プレフィックスの壊れたロックのみ削除（認証トークンは保持）
+    try{
+      Object.keys(localStorage).forEach(function(k){
+        if(k.startsWith('lock:')) localStorage.removeItem(k);
+      });
+    }catch(e){}
+
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // 認証状態の監視（ページリロード時も自動復元される）
+    // onAuthStateChangeがINITIAL_SESSIONイベントで起動時セッションを自動復元する
+    // getSession()は不要（タイムアウト問題の原因）
+    let initialHandled=false;
     sb.auth.onAuthStateChange(async function(event, session){
       const user=session?.user||null;
       if(user){
+        initialHandled=true;
         await onAuthChange(user);
       } else {
-        switchToLogin();
-        renderFeed();
+        // INITIAL_SESSIONかつユーザーなし → 未ログイン
+        if(!initialHandled){
+          initialHandled=true;
+          renderFeed();
+        } else {
+          // ログアウトイベント
+          switchToLogin();
+          renderFeed();
+        }
       }
     });
 
-    // 起動時のセッション確認（タイムアウト5秒）
-    try{
-      const result=await Promise.race([
-        sb.auth.getSession(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      if(!result.data?.session){
-        // セッションなし→トークン削除してログイン画面
-        switchToLogin();
+    // onAuthStateChangeのINITIAL_SESSIONが3秒以内に発火しない場合のフォールバック
+    setTimeout(function(){
+      if(!initialHandled){
+        initialHandled=true;
         renderFeed();
       }
-    }catch(e){
-      console.warn('getSession失敗:', e.message);
-      switchToLogin();
-      renderFeed();
-    }
+    }, 3000);
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
@@ -2480,9 +2487,6 @@ async function appInit(){
   }
 }
 
-
-// app.jsはbody末尾に配置→DOMは既に存在する
-// Supabase SDKはhead内で同期読み込み済み
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', appInit);
 } else {
