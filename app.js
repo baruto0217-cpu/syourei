@@ -376,6 +376,12 @@ async function doReset(){
 
 async function doLogout(){
   await sb.auth.signOut();
+  // localStorageのSupabase認証トークンを明示的に削除
+  try{
+    Object.keys(localStorage).forEach(function(k){
+      if(k.startsWith('sb-')) localStorage.removeItem(k);
+    });
+  }catch(e){}
   currentUser=null; currentProfile=null;
   document.getElementById('app').classList.remove('active');
   document.getElementById('scr-login').classList.add('active');
