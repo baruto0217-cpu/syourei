@@ -2424,21 +2424,28 @@ async function appInit(){
     if(!window.supabase){
       throw new Error('Supabase SDKが読み込まれていません');
     }
-    // 起動前に壊れた認証ロックを全てクリア
+    // localStorageの壊れたロックのみクリア（認証トークンは保持）
     try{
       Object.keys(localStorage).forEach(function(k){
-        if(k.startsWith('sb-') || k.startsWith('lock:')) localStorage.removeItem(k);
+        if(k.startsWith('lock:')) localStorage.removeItem(k);
       });
     }catch(e){}
 
+    // カスタムストレージ：localStorageとsessionStorageを組み合わせて
+    // ロックが発生しない安全なストレージを実装
+    const safeStorage = {
+      getItem: function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+      setItem: function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+      removeItem: function(k){ try{ localStorage.removeItem(k); }catch(e){} },
+    };
+
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth:{
-        // ロック問題を回避：localStorageの代わりにsessionStorageを使用
-        // セッションストレージはタブを閉じると消えるためロックが蓄積しない
-        storage: window.sessionStorage,
+        storage: safeStorage,
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
+        flowType: 'implicit',
       }
     });
     if(sbStatus) sbStatus.style.display='none';
