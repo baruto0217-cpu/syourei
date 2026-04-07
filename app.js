@@ -2449,15 +2449,27 @@ async function appInit(){
       if(user){
         await onAuthChange(user);
       } else {
-        currentUser=null;
-        currentProfile=null;
-        const appEl=document.getElementById('app');
-        const loginEl=document.getElementById('scr-login');
-        if(appEl) appEl.classList.remove('active');
-        if(loginEl) loginEl.classList.add('active');
+        switchToLogin();
         renderFeed();
       }
     });
+
+    // 起動時のセッション確認（タイムアウト5秒）
+    try{
+      const result=await Promise.race([
+        sb.auth.getSession(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+      ]);
+      if(!result.data?.session){
+        // セッションなし→トークン削除してログイン画面
+        switchToLogin();
+        renderFeed();
+      }
+    }catch(e){
+      console.warn('getSession失敗:', e.message);
+      switchToLogin();
+      renderFeed();
+    }
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
