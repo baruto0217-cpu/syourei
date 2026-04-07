@@ -2457,19 +2457,7 @@ async function appInit(){
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // onAuthStateChangeでログイン・ログアウトを監視
-    sb.auth.onAuthStateChange(async function(event, session){
-      console.log('AUTH EVENT:', event);
-      const user=session?.user||null;
-      if(user){
-        await onAuthChange(user);
-      } else if(event==='SIGNED_OUT'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED'){
-        switchToLogin();
-        renderFeed();
-      }
-    });
-
-    // 起動時のセッション確認（getSessionを直接使用）
+    // 起動時のセッション確認
     const {data, error} = await sb.auth.getSession();
     if(error){
       console.warn('getSession error:', error.message);
@@ -2481,6 +2469,17 @@ async function appInit(){
     } else {
       renderFeed();
     }
+
+    // ログアウト監視（起動後のセッション変化のみ対応）
+    sb.auth.onAuthStateChange(async function(event, session){
+      if(event==='SIGNED_OUT'){
+        switchToLogin();
+        renderFeed();
+      } else if(event==='TOKEN_REFRESHED'&&session?.user){
+        // トークン更新時はcurrentUserだけ更新（再描画しない）
+        currentUser=session.user;
+      }
+    });
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
