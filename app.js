@@ -2423,35 +2423,15 @@ function showToast(msg){
 async function appInit(){
   const sbStatus=document.getElementById('sb-status');
   try{
-    // Supabase SDKはwindow.supabaseに展開される
     if(!window.supabase){
-      throw new Error('Supabase SDKが読み込まれていません');
+      throw new Error('Supabase SDK未ロード');
     }
-    // localStorageの壊れたロックのみクリア（認証トークンは保持）
-    try{
-      Object.keys(localStorage).forEach(function(k){
-        if(k.startsWith('lock:')) localStorage.removeItem(k);
-      });
-    }catch(e){}
 
-    // カスタムストレージ：localStorageとsessionStorageを組み合わせて
-    // ロックが発生しない安全なストレージを実装
-    const safeStorage = {
-      getItem: function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
-      setItem: function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
-      removeItem: function(k){ try{ localStorage.removeItem(k); }catch(e){} },
-    };
-
-    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth:{
-        storage: safeStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-      }
-    });
+    // シンプルな初期化（SDKを@2.45.4に固定済みのためロック問題なし）
+    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // 認証状態の監視
+    // 認証状態の監視（ページリロード時も自動復元される）
     sb.auth.onAuthStateChange(async function(event, session){
       const user=session?.user||null;
       if(user){
@@ -2467,11 +2447,6 @@ async function appInit(){
       }
     });
 
-    // 現在のセッション確認
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){
-      renderFeed();
-    }
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
     if(sbStatus) sbStatus.textContent='接続エラー。ページを再読み込みしてください。';
