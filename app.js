@@ -1702,8 +1702,11 @@ async function submitCase(){
     await fetchAndRenderFeed();
     setTimeout(function(){showPage('timeline',document.querySelector('.ntab'));},800);
   } catch(e){
-    showToast('保存に失敗しました: '+e.message);
+    const msg = e.message || JSON.stringify(e) || '不明なエラー';
+    showToast('投稿失敗: '+msg);
     console.error('submitCase error:', e);
+    // エラー詳細をアラートで表示（デバッグ用）
+    alert('投稿エラー詳細:\n' + msg + '\n\nコード: ' + (e.code||'なし') + '\n詳細: ' + (e.details||'なし') + '\nヒント: ' + (e.hint||'なし'));
   } finally {
     if(submitBtn){submitBtn.disabled=false;}
   }
@@ -2444,8 +2447,6 @@ async function appInit(){
         storage: safeStorage,
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
-        flowType: 'implicit',
       }
     });
     if(sbStatus) sbStatus.style.display='none';
