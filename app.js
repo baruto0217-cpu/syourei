@@ -288,13 +288,16 @@ async function doLogin(){
   if(!email||!pass){showAuthErr('login-err','メールアドレスとパスワードを入力してください');return;}
   setLoading('login-btn','login-spinner','login-btn-txt',true);
   try {
-    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    const {data, error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error){
       const msg=error.message||'';
       const isInvalid=msg.includes('Invalid')||msg.includes('credentials')||
                       msg.includes('invalid')||error.status===400;
       showAuthErr('login-err', isInvalid
         ?'メールアドレスまたはパスワードが違います':msg);
+    } else if(data?.user){
+      // ログイン成功→onAuthChangeを直接呼ぶ（onAuthStateChangeに依存しない）
+      await onAuthChange(data.user);
     }
   } catch(e){
     showAuthErr('login-err','通信エラーが発生しました: '+e.message);
@@ -398,6 +401,8 @@ async function doLogout(){
 
 async function onAuthChange(user){
   if(!user) return;
+  // 同一ユーザーの二重実行を防止
+  if(currentUser?.id === user.id && currentProfile) return;
   currentUser=user;
 
   // まずメールアドレスからニックネームを生成して即座に画面を表示
@@ -2443,11 +2448,9 @@ function showToast(msg){
 async function appInit(){
   const sbStatus=document.getElementById('sb-status');
   try{
-    if(!window.supabase){
-      throw new Error('Supabase SDK未ロード');
-    }
+    if(!window.supabase) throw new Error('Supabase SDK未ロード');
 
-    // 壊れたロックのみ削除
+    // 壊れたロックのみ削除（認証トークンは保持）
     try{
       Object.keys(localStorage).forEach(function(k){
         if(k.startsWith('lock:')) localStorage.removeItem(k);
@@ -2457,20 +2460,29 @@ async function appInit(){
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // 認証状態の監視（ログイン・ログアウト・トークン更新）
-    sb.auth.onAuthStateChange(async function(event, session){
-      if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
-        if(session?.user) await onAuthChange(session.user);
-      } else if(event==='SIGNED_OUT'){
+    // ─── 設計方針 ───────────────────────────────────────────
+    // getSession()のみで起動時セッションを確認する。
+    // onAuthStateChangeはSIGNED_OUTのみ監視（ログアウト検知）。
+    // SIGNED_INはgetSession後のdoLogin()成功時にonAuthChangeを呼ぶ。
+    // この設計により onAuthChange の二重呼び出しを完全に防ぐ。
+    // ────────────────────────────────────────────────────────
+
+    // ログアウト監視のみ（SIGNED_INは監視しない）
+    sb.auth.onAuthStateChange(function(event, session){
+      if(event==='SIGNED_OUT'){
         switchToLogin();
         renderFeed();
       }
     });
 
-    // 起動時のセッション復元
-    const {data:{session}} = await sb.auth.getSession();
-    if(session) await onAuthChange(session.user);
-    else renderFeed();
+    // 起動時セッション確認
+    const {data, error} = await sb.auth.getSession();
+    if(error){ console.warn('getSession error:', error.message); renderFeed(); return; }
+    if(data?.session?.user){
+      await onAuthChange(data.session.user);
+    } else {
+      renderFeed();
+    }
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
