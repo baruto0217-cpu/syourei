@@ -397,36 +397,17 @@ async function doLogout(){
 }
 
 async function onAuthChange(user){
-  if(user){
-    currentUser=user;
-    // セッション確立を待ってからprofilesを取得・作成
-    // 最大3回リトライ（新規登録直後はセッション確立が遅れる場合がある）
-    let data=null;
-    for(let retry=0;retry<3;retry++){
-      if(retry>0) await new Promise(r=>setTimeout(r,1000)); // 1秒待機
-      const {data:prof,error}=await sb.from('profiles')
-        .select('*').eq('id',user.id).single();
-      if(prof){data=prof;break;}
-      // profilesが存在しない場合は作成を試みる
-      if(!prof){
-        const nick=user.user_metadata?.nickname||user.email.split('@')[0];
-        const {data:created,error:createErr}=await sb.from('profiles').upsert({
-          id:user.id,
-          nickname:nick,
-          av_color:'#e53e3e',
-          av_bg:'rgba(229,62,62,.2)',
-          is_admin:false,
-        },{onConflict:'id'}).select().single();
-        if(created){data=created;break;}
-        console.warn('profiles作成試行'+(retry+1)+':',createErr?.message);
-      }
-    }
-    currentProfile=data;
-    const nick=data?.nickname||user.email.split('@')[0];
-    const isAdmin=data?.is_admin||false;
-    // ヘッダー表示
+  if(!user) return;
+  currentUser=user;
+
+  // まずメールアドレスからニックネームを生成して即座に画面を表示
+  const emailNick=user.user_metadata?.nickname||user.email.split('@')[0];
+  currentProfile=null;
+
+  // 画面をすぐに切り替え（profilesの取得を待たない）
+  function showApp(nick, isAdmin){
     const hdrUser=document.getElementById('hdr-user');
-    hdrUser.innerHTML=isAdmin
+    if(hdrUser) hdrUser.innerHTML=isAdmin
       ? nick+' <span style="background:var(--acc);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.06em;vertical-align:middle">ADMIN</span>'
       : nick;
     const postNick=document.getElementById('post-nick-disp');
@@ -435,13 +416,38 @@ async function onAuthChange(user){
     if(postAv) postAv.textContent=nick.slice(0,2)||'?';
     document.getElementById('scr-login').classList.remove('active');
     document.getElementById('app').classList.add('active');
-    fetchAndRenderFeed();
-    // 管理者なら通知ボタンを表示して通知を取得
     if(isAdmin){
       const nb=document.getElementById('notif-btn');
       if(nb) nb.style.display='flex';
       fetchNotifications();
     }
+  }
+
+  // まずメールアドレスで即座にログイン画面を切り替え
+  showApp(emailNick, false);
+  fetchAndRenderFeed();
+
+  // profilesを非同期で取得（画面表示後に更新）
+  try{
+    const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    if(data){
+      currentProfile=data;
+      showApp(data.nickname||emailNick, data.is_admin||false);
+    } else {
+      // profilesが存在しない場合は作成
+      const nick=emailNick;
+      await sb.from('profiles').insert({
+        id:user.id, nickname:nick,
+        av_color:'#e53e3e', av_bg:'rgba(229,62,62,.2)', is_admin:false,
+      }).catch(()=>{});
+      const {data:created}=await sb.from('profiles').select('*').eq('id',user.id).single();
+      if(created){
+        currentProfile=created;
+        showApp(created.nickname||nick, created.is_admin||false);
+      }
+    }
+  }catch(e){
+    console.warn('profiles取得エラー（メールアドレスで続行）:', e.message);
   }
 }
 
@@ -2441,7 +2447,7 @@ async function appInit(){
       throw new Error('Supabase SDK未ロード');
     }
 
-    // lock:プレフィックスの壊れたロックのみ削除（認証トークンは保持）
+    // 壊れたロックのみ削除
     try{
       Object.keys(localStorage).forEach(function(k){
         if(k.startsWith('lock:')) localStorage.removeItem(k);
@@ -2451,34 +2457,30 @@ async function appInit(){
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // onAuthStateChangeがINITIAL_SESSIONイベントで起動時セッションを自動復元する
-    // getSession()は不要（タイムアウト問題の原因）
-    let initialHandled=false;
+    // onAuthStateChangeでログイン・ログアウトを監視
     sb.auth.onAuthStateChange(async function(event, session){
+      console.log('AUTH EVENT:', event);
       const user=session?.user||null;
       if(user){
-        initialHandled=true;
         await onAuthChange(user);
-      } else {
-        // INITIAL_SESSIONかつユーザーなし → 未ログイン
-        if(!initialHandled){
-          initialHandled=true;
-          renderFeed();
-        } else {
-          // ログアウトイベント
-          switchToLogin();
-          renderFeed();
-        }
+      } else if(event==='SIGNED_OUT'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED'){
+        switchToLogin();
+        renderFeed();
       }
     });
 
-    // onAuthStateChangeのINITIAL_SESSIONが3秒以内に発火しない場合のフォールバック
-    setTimeout(function(){
-      if(!initialHandled){
-        initialHandled=true;
-        renderFeed();
-      }
-    }, 3000);
+    // 起動時のセッション確認（getSessionを直接使用）
+    const {data, error} = await sb.auth.getSession();
+    if(error){
+      console.warn('getSession error:', error.message);
+      renderFeed();
+      return;
+    }
+    if(data?.session?.user){
+      await onAuthChange(data.session.user);
+    } else {
+      renderFeed();
+    }
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
