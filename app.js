@@ -398,6 +398,8 @@ async function doLogout(){
 
 async function onAuthChange(user){
   if(!user) return;
+  // 既に同じユーザーでログイン済みなら再実行しない
+  if(currentUser && currentUser.id === user.id) return;
   currentUser=user;
 
   // まずメールアドレスからニックネームを生成して即座に画面を表示
@@ -2457,26 +2459,16 @@ async function appInit(){
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // 起動時のセッション確認
-    const {data, error} = await sb.auth.getSession();
-    if(error){
-      console.warn('getSession error:', error.message);
-      renderFeed();
-      return;
-    }
-    if(data?.session?.user){
-      await onAuthChange(data.session.user);
-    } else {
-      renderFeed();
-    }
-
-    // ログアウト監視（起動後のセッション変化のみ対応）
+    // onAuthStateChangeで全ての認証状態変化を監視
     sb.auth.onAuthStateChange(async function(event, session){
-      if(event==='SIGNED_OUT'){
+      if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+        if(session?.user) await onAuthChange(session.user);
+        else renderFeed();
+      } else if(event==='SIGNED_OUT'){
+        currentUser=null;
         switchToLogin();
         renderFeed();
       } else if(event==='TOKEN_REFRESHED'&&session?.user){
-        // トークン更新時はcurrentUserだけ更新（再描画しない）
         currentUser=session.user;
       }
     });
