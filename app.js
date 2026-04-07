@@ -374,18 +374,24 @@ async function doReset(){
   document.getElementById('reset-success').style.display='block';
 }
 
-async function doLogout(){
-  await sb.auth.signOut();
-  // localStorageのSupabase認証トークンを明示的に削除
+// ログイン画面への切り替え（トークンも合わせて削除）
+function switchToLogin(){
   try{
     Object.keys(localStorage).forEach(function(k){
-      if(k.startsWith('sb-')) localStorage.removeItem(k);
+      if(k.startsWith('sb-') || k.startsWith('lock:')) localStorage.removeItem(k);
     });
   }catch(e){}
   currentUser=null; currentProfile=null;
-  document.getElementById('app').classList.remove('active');
-  document.getElementById('scr-login').classList.add('active');
+  const appEl=document.getElementById('app');
+  const loginEl=document.getElementById('scr-login');
+  if(appEl) appEl.classList.remove('active');
+  if(loginEl) loginEl.classList.add('active');
   switchAuthTab('login');
+}
+
+async function doLogout(){
+  if(sb) await sb.auth.signOut();
+  switchToLogin();
 }
 
 async function onAuthChange(user){
