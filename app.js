@@ -289,8 +289,13 @@ async function doLogin(){
   setLoading('login-btn','login-spinner','login-btn-txt',true);
   try {
     const {error}=await sb.auth.signInWithPassword({email,password:pass});
-    if(error) showAuthErr('login-err', error.message.includes('Invalid')||error.message.includes('credentials')
-      ?'メールアドレスまたはパスワードが違います':error.message);
+    if(error){
+      const msg=error.message||'';
+      const isInvalid=msg.includes('Invalid')||msg.includes('credentials')||
+                      msg.includes('invalid')||error.status===400;
+      showAuthErr('login-err', isInvalid
+        ?'メールアドレスまたはパスワードが違います':msg);
+    }
   } catch(e){
     showAuthErr('login-err','通信エラーが発生しました: '+e.message);
   }
@@ -374,13 +379,10 @@ async function doReset(){
   document.getElementById('reset-success').style.display='block';
 }
 
-// ログイン画面への切り替え（トークンも合わせて削除）
+// ログイン画面への切り替え
 function switchToLogin(){
-  try{
-    Object.keys(localStorage).forEach(function(k){
-      if(k.startsWith('sb-') || k.startsWith('lock:')) localStorage.removeItem(k);
-    });
-  }catch(e){}
+  // ※ localStorageのトークンはSupabaseのsignOut()に任せる
+  // 手動削除すると他デバイスのセッションに影響するため行わない
   currentUser=null; currentProfile=null;
   const appEl=document.getElementById('app');
   const loginEl=document.getElementById('scr-login');
@@ -390,7 +392,7 @@ function switchToLogin(){
 }
 
 async function doLogout(){
-  if(sb) await sb.auth.signOut();
+  if(sb) await sb.auth.signOut(); // signOut()がトークンを削除する
   switchToLogin();
 }
 
