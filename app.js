@@ -367,7 +367,13 @@ async function doSignup(){
       .update({use_count:codeData.use_count+1})
       .eq('id',codeData.id);
   }
+  // 成功メッセージを表示して3秒後にログイン画面に切り替え
   document.getElementById('signup-success').style.display='block';
+  setLoading('signup-btn','signup-spinner','signup-btn-txt',false);
+  setTimeout(function(){
+    document.getElementById('signup-success').style.display='none';
+    switchAuthTab('login');
+  }, 3000);
 }
 
 async function doReset(){
