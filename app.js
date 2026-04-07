@@ -398,8 +398,6 @@ async function doLogout(){
 
 async function onAuthChange(user){
   if(!user) return;
-  // 既に同じユーザーでログイン済みなら再実行しない
-  if(currentUser && currentUser.id === user.id) return;
   currentUser=user;
 
   // まずメールアドレスからニックネームを生成して即座に画面を表示
@@ -2459,19 +2457,20 @@ async function appInit(){
     sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     if(sbStatus) sbStatus.style.display='none';
 
-    // onAuthStateChangeで全ての認証状態変化を監視
+    // 認証状態の監視（ログイン・ログアウト・トークン更新）
     sb.auth.onAuthStateChange(async function(event, session){
-      if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+      if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
         if(session?.user) await onAuthChange(session.user);
-        else renderFeed();
       } else if(event==='SIGNED_OUT'){
-        currentUser=null;
         switchToLogin();
         renderFeed();
-      } else if(event==='TOKEN_REFRESHED'&&session?.user){
-        currentUser=session.user;
       }
     });
+
+    // 起動時のセッション復元
+    const {data:{session}} = await sb.auth.getSession();
+    if(session) await onAuthChange(session.user);
+    else renderFeed();
 
   }catch(e){
     console.error('Supabase初期化エラー:', e.message);
