@@ -868,6 +868,18 @@ function buildDetail(id){
   const adminBtns=document.getElementById('admin-det-btns');
   if(adminBtns) adminBtns.style.display=isAdmin?'flex':'none';
 
+  // ダウンロードボタン（作成者または管理者のみ）
+  const isOwner=currentUser&&c.user_id===currentUser.id;
+  const dlArea=document.getElementById('dl-btn-area');
+  if(dlArea){
+    if(isOwner||isAdmin){
+      dlArea.innerHTML='<button onclick="downloadCase('+c.id+')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(72,187,120,.15);border:1px solid #48bb78;border-radius:8px;color:#9ae6b4;font-size:13px;font-weight:600;cursor:pointer">📥 テキストダウンロード</button>';
+      dlArea.style.display='block';
+    } else {
+      dlArea.style.display='none';
+    }
+  }
+
   const fclass=function(v){
     if(!v) return '';
     if(/300|消失|なし|不可|VF|PEA/.test(v)) return 'al';
@@ -2440,6 +2452,86 @@ function deleteDraft(){
   showToast('下書きを削除しました');
 }
 
+
+// ===== DOWNLOAD =====
+function downloadCase(caseId){
+  const c=CASES.find(x=>x.id==caseId);
+  if(!c){ showToast('症例データが見つかりません'); return; }
+  const isOwner=currentUser&&currentUser.id===c.user_id;
+  const isAdmin=currentProfile?.is_admin||false;
+  if(!isOwner&&!isAdmin){ showToast('ダウンロード権限がありません'); return; }
+  const d='────────────────────────────────';
+  const L=[];
+  L.push('══════════════════════════════════');
+  L.push('　EMS CaseLog　症例データ');
+  L.push('══════════════════════════════════');
+  L.push('【タイトル】'+(c.title||''));
+  L.push('【タイプ】　'+(c.type||'')+'　【カテゴリ】'+(c.cat||''));
+  L.push('【投稿日】　'+new Date(c.created_at||Date.now()).toLocaleDateString('ja-JP'));
+  L.push('');
+  L.push(d); L.push('■ 患者情報'); L.push(d);
+  const age=(c.pt_age)?c.pt_age+(c.pt_age_unit||'歳'):(c.pt&&c.pt.age)||'不明';
+  L.push('年齢: '+age+'　性別: '+(c.pt_sex||(c.pt&&c.pt.sex)||'不明'));
+  L.push('発生場所: '+(c.pt_place||(c.pt&&c.pt.place)||'不明'));
+  L.push('搬送先: '+(c.pt_dest||(c.pt&&c.pt.transport)||'不明'));
+  L.push('通報内容: '+(c.chief||(c.pt&&c.pt.chief)||''));
+  if(c.prearrival) L.push('プレアライバル: '+c.prearrival);
+  if(c.roles) L.push('役割分担: '+c.roles);
+  L.push(''); L.push(d); L.push('■ 現場状況'); L.push(d);
+  L.push(c.scene||''); L.push('');
+  L.push(d); L.push('■ 既往歴・内服薬'); L.push(d);
+  L.push('既往歴: '+(c.pmhx||''));
+  L.push('内服薬: '+(c.meds||''));
+  L.push('アレルギー: '+(c.allergy||''));
+  L.push('');
+  var tps=c.timepoints||[];
+  for(var ti=0;ti<tps.length;ti++){
+    var tp=tps[ti]; var fn=tp.findings||{}; var vt=tp.vitals||{};
+    L.push(d);
+    L.push('■ タイムポイント'+(ti+1)+': '+(tp.label||'')+' ('+(tp.time||'')+')');
+    L.push(d);
+    L.push('意識: '+(fn.consciousness||'---'));
+    L.push('呼吸: '+(fn.breathing||'---')+'　循環: '+(fn.circulation||'---'));
+    L.push('瞳孔: '+(fn.pupils||'---')+'　皮膚: '+(fn.skin||'---'));
+    if(tp.obs) L.push('観察: '+tp.obs);
+    var vs=[];
+    if(vt.bp&&vt.bp!=='---') vs.push('BP:'+vt.bp);
+    if(vt.hr&&vt.hr!=='---') vs.push('HR:'+vt.hr);
+    if(vt.spo2&&vt.spo2!=='---') vs.push('SpO2:'+vt.spo2+'%');
+    if(vt.rr&&vt.rr!=='---') vs.push('RR:'+vt.rr);
+    if(vt.bg&&vt.bg!=='---') vs.push('BG:'+vt.bg);
+    if(vt.temp&&vt.temp!=='---') vs.push('Temp:'+vt.temp);
+    if(vt.etco2&&vt.etco2!=='---') vs.push('ETCO2:'+vt.etco2);
+    if(vs.length) L.push('【バイタル】'+vs.join('　'));
+    if(tp.rhythm) L.push('調律: '+tp.rhythm+(tp.st?'　ST: '+tp.st:''));
+    if(tp.ecgNote) L.push('ECG: '+tp.ecgNote);
+    if(tp.treatment&&tp.treatment.length) L.push('処置: '+tp.treatment.join('、'));
+    if(tp.treatmentNote) L.push(tp.treatmentNote);
+    L.push('');
+  }
+  L.push(d); L.push('■ 振り返り'); L.push(d);
+  var worry=c.reflect_worry||(c.reflect&&c.reflect.worry)||'';
+  var good=c.reflect_good||(c.reflect&&c.reflect.good)||'';
+  var learn=c.reflect_learn||(c.reflect&&c.reflect.learn)||'';
+  var question=c.reflect_question||(c.reflect&&c.reflect.question)||'';
+  if(worry){L.push('【迷った点】');L.push(worry);L.push('');}
+  if(question){L.push('【質問したいこと】');L.push(question);L.push('');}
+  if(good){L.push('【よかった点】');L.push(good);L.push('');}
+  if(learn){L.push('【学び】');L.push(learn);L.push('');}
+  var tags=c.tags||[];
+  if(tags.length){L.push(d);L.push('■ タグ');L.push(d);L.push(tags.join('　'));L.push('');}
+  L.push('══════════════════════════════════');
+  L.push('EMS CaseLog より出力 '+new Date().toLocaleString('ja-JP'));
+  L.push('══════════════════════════════════');
+  var blob=new Blob(['\uFEFF'+L.join('\n')],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='EMS症例_'+(c.title||'症例').slice(0,20).replace(/[\\/:*?"<>|]/g,'_')+'.txt';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('症例をダウンロードしました 📥');
+}
 
 // ===== TOAST =====
 function showToast(msg){
