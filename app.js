@@ -1523,11 +1523,11 @@ async function startEditCase(caseId){
       var fi=card.querySelectorAll('.tp-find-inp');
       var fn=tp.findings||{};
       if(fi[0])fi[0].value=fn.consciousness||'';
-      if(fi[1])fi[1].value=fn.breathing||'';
-      if(fi[2])fi[2].value=fn.breath_sounds||'';
-      if(fi[3])fi[3].value=fn.circulation||'';
-      if(fi[4])fi[4].value=fn.skin||'';
-      if(fi[5])fi[5].value=fn.pupils||'';
+      if(fi[1])fi[1].value=fn.pupils||'';
+      if(fi[2])fi[2].value=fn.breathing||'';
+      if(fi[3])fi[3].value=fn.breath_sounds||'';
+      if(fi[4])fi[4].value=fn.circulation||'';
+      if(fi[5])fi[5].value=fn.skin||'';
       var vi=card.querySelectorAll('.vital-inp');
       var vt=tp.vitals||{};
       ['bp','hr','spo2','rr','temp','bg','etco2'].forEach(function(k,i){
@@ -1672,9 +1672,9 @@ async function submitCase(){
       label: card.querySelector('.tp-label-inp')?.value||'',
       time:  card.querySelector('.tp-time-inp')?.value||'',
       findings:{
-        consciousness: fi[0]?.value||'', breathing:fi[1]?.value||'',
-        breath_sounds: fi[2]?.value||'', circulation:fi[3]?.value||'',
-        skin:fi[4]?.value||'',           pupils:fi[5]?.value||'',
+        consciousness: fi[0]?.value||'', pupils:fi[1]?.value||'',
+        breathing:fi[2]?.value||'',      breath_sounds:fi[3]?.value||'',
+        circulation:fi[4]?.value||'',    skin:fi[5]?.value||'',
       },
       obs: ni[0]?.value||'',
       vitals:{
@@ -2318,9 +2318,9 @@ function saveDraft(){
       return {
         label: card.querySelector('.tp-label-inp')?.value||'',
         time:  card.querySelector('.tp-time-inp')?.value||'',
-        consciousness:fi[0]?.value||'', breathing:fi[1]?.value||'',
-        breath_sounds:fi[2]?.value||'', circulation:fi[3]?.value||'',
-        skin:fi[4]?.value||'', pupils:fi[5]?.value||'',
+        consciousness:fi[0]?.value||'', pupils:fi[1]?.value||'',
+        breathing:fi[2]?.value||'', breath_sounds:fi[3]?.value||'',
+        circulation:fi[4]?.value||'', skin:fi[5]?.value||'',
         rhythm:fi[6]?.value||'', st:fi[7]?.value||'',
         obs:ni[0]?.value||'', ecgNote:ni[1]?.value||'', treatmentNote:ni[2]?.value||'',
         bp:vi[0]?.value||'', hr:vi[1]?.value||'',
@@ -2415,11 +2415,11 @@ function restoreDraft(){
           si('.tp-label-inp',tp.label); si('.tp-time-inp',tp.time);
           var fi=card.querySelectorAll('.tp-find-inp');
           if(fi[0])fi[0].value=tp.consciousness||'';
-          if(fi[1])fi[1].value=tp.breathing||'';
-          if(fi[2])fi[2].value=tp.breath_sounds||'';
-          if(fi[3])fi[3].value=tp.circulation||'';
-          if(fi[4])fi[4].value=tp.skin||'';
-          if(fi[5])fi[5].value=tp.pupils||'';
+          if(fi[1])fi[1].value=tp.pupils||'';
+          if(fi[2])fi[2].value=tp.breathing||'';
+          if(fi[3])fi[3].value=tp.breath_sounds||'';
+          if(fi[4])fi[4].value=tp.circulation||'';
+          if(fi[5])fi[5].value=tp.skin||'';
           if(fi[6])fi[6].value=tp.rhythm||'';
           if(fi[7])fi[7].value=tp.st||'';
           var vi=card.querySelectorAll('.vital-inp');
