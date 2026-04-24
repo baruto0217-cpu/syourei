@@ -490,6 +490,26 @@ function showDetail(id){
   buildDetail(id);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-detail').classList.add('active');
+  // 閲覧回数をカウントアップ（ログイン中・非サンプルのみ）
+  incrementViewCount(id);
+}
+
+async function incrementViewCount(id){
+  if(!sb||!currentUser) return;
+  const c=CASES.find(x=>x.id==id);
+  if(!c||c.is_sample) return;
+  try{
+    // DBのview_countをインクリメント
+    await sb.rpc('increment_view_count',{case_id:id});
+    // ローカルのCASES配列も更新
+    if(c) c.view_count=(c.view_count||0)+1;
+    // タイムライン上のカードの閲覧数表示を更新
+    const vcEl=document.getElementById('vc-'+id);
+    if(vcEl) vcEl.textContent=c.view_count;
+    // 詳細画面の閲覧数表示も更新
+    const vcDetEl=document.getElementById('vc-det-'+id);
+    if(vcDetEl) vcDetEl.textContent=c.view_count;
+  }catch(e){ /* 閲覧数更新エラーは無視 */ }
 }
 
 // マイページからDBのIDで詳細を表示（CASES配列にない場合はDBから取得）
@@ -663,6 +683,7 @@ async function fetchAndRenderFeed(){
           likes:0,
           comments:[], comments_count:cmtCount,
           liked:false,bookmarked:false,
+          view_count:d.view_count||0,
           timepoints:d.timepoints||[],
           tags:d.tags||[],
         };
@@ -787,6 +808,7 @@ function renderFeed(){
         <div class="reacts">
           <button class="rbtn${liked?' liked':''}" onclick="toggleLike(${c.id})">❤️ <span id="lk-${c.id}">${likes}</span></button>
           <button class="rbtn" onclick="showDetail(${c.id})">💬 ${c.comments_count!=null?c.comments_count:c.comments.length}</button>
+          <button class="rbtn" onclick="showDetail(${c.id})" style="pointer-events:none">👁 <span id="vc-${c.id}">${c.view_count||0}</span></button>
           <button class="rbtn${bkm?' bkm':''}" onclick="toggleBkm(${c.id})">🔖</button>
           ${currentProfile?.is_admin?'<button class="rbtn" onclick="adminDeleteCase('+c.id+',event)" style="color:#e53e3e" title="管理者削除">🗑</button>':''}
         </div>
@@ -997,7 +1019,7 @@ function buildDetail(id){
       +(c.is_anon
       ?'<span style="font-size:12px;color:var(--tm);margin-left:4px">匿名投稿</span>'
       :'')
-    +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+(c.comments_count!=null?c.comments_count:comments.length)+'</span>'
+    +'<span style="font-size:12px;color:var(--ts);display:flex;align-items:center;gap:6px;margin-left:4px">❤️ '+(likeSt[c.id]??c.likes)+'　💬 '+(c.comments_count!=null?c.comments_count:comments.length)+'　👁 <span id="vc-det-'+c.id+'">'+(c.view_count||0)+'</span></span>'
     +'</div>'
 
 
