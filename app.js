@@ -501,14 +501,16 @@ async function incrementViewCount(id){
   try{
     // DBのview_countをインクリメント
     await sb.rpc('increment_view_count',{case_id:id});
-    // ローカルのCASES配列も更新
-    if(c) c.view_count=(c.view_count||0)+1;
+    // DBから最新のview_countを取得して表示（ローカルの+1ではなくDB値を使う）
+    const {data}=await sb.from('cases').select('view_count').eq('id',id).single();
+    const newCount=data?.view_count||0;
+    if(c) c.view_count=newCount;
     // タイムライン上のカードの閲覧数表示を更新
     const vcEl=document.getElementById('vc-'+id);
-    if(vcEl) vcEl.textContent=c.view_count;
+    if(vcEl) vcEl.textContent=newCount;
     // 詳細画面の閲覧数表示も更新
     const vcDetEl=document.getElementById('vc-det-'+id);
-    if(vcDetEl) vcDetEl.textContent=c.view_count;
+    if(vcDetEl) vcDetEl.textContent=newCount;
   }catch(e){ /* 閲覧数更新エラーは無視 */ }
 }
 
