@@ -496,22 +496,22 @@ function showDetail(id){
 
 async function incrementViewCount(id){
   if(!sb||!currentUser) return;
-  const c=CASES.find(x=>x.id==id);
+  const numId=Number(id); // 型を数値に統一
+  const c=CASES.find(x=>Number(x.id)===numId);
   if(!c||c.is_sample) return;
   try{
     // DBのview_countをインクリメント
-    await sb.rpc('increment_view_count',{case_id:id});
-    // DBから最新のview_countを取得して表示（ローカルの+1ではなくDB値を使う）
-    const {data}=await sb.from('cases').select('view_count').eq('id',id).single();
-    const newCount=data?.view_count||0;
-    if(c) c.view_count=newCount;
+    const {error:rpcErr}=await sb.rpc('increment_view_count',{p_case_id:numId});
+    if(rpcErr){ console.warn('閲覧数RPC失敗:', rpcErr.message); return; }
+    // ローカルのCASES配列をインクリメント（DB再取得しない）
+    c.view_count=(c.view_count||0)+1;
     // タイムライン上のカードの閲覧数表示を更新
-    const vcEl=document.getElementById('vc-'+id);
-    if(vcEl) vcEl.textContent=newCount;
+    const vcEl=document.getElementById('vc-'+numId);
+    if(vcEl) vcEl.textContent=c.view_count;
     // 詳細画面の閲覧数表示も更新
-    const vcDetEl=document.getElementById('vc-det-'+id);
-    if(vcDetEl) vcDetEl.textContent=newCount;
-  }catch(e){ /* 閲覧数更新エラーは無視 */ }
+    const vcDetEl=document.getElementById('vc-det-'+numId);
+    if(vcDetEl) vcDetEl.textContent=c.view_count;
+  }catch(e){ console.warn('閲覧数更新エラー:', e.message); }
 }
 
 // マイページからDBのIDで詳細を表示（CASES配列にない場合はDBから取得）
